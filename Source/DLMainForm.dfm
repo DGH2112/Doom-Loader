@@ -169,7 +169,7 @@ object frmDLMainForm: TfrmDLMainForm
     Height = 41
     Align = alBottom
     BevelOuter = bvNone
-    TabOrder = 1
+    TabOrder = 2
     ExplicitTop = 400
     ExplicitWidth = 624
     DesignSize = (
@@ -193,7 +193,7 @@ object frmDLMainForm: TfrmDLMainForm
       Caption = '&Launch'
       Default = True
       ParentDoubleBuffered = True
-      TabOrder = 0
+      TabOrder = 1
       OnClick = btnLaunchClick
       ExplicitLeft = 536
     end
@@ -203,7 +203,8 @@ object frmDLMainForm: TfrmDLMainForm
       Width = 470
       Height = 24
       Anchors = [akLeft, akTop, akRight]
-      TabOrder = 1
+      TabOrder = 0
+      ExplicitWidth = 466
     end
   end
   object pnlWADs: TPanel
@@ -213,7 +214,7 @@ object frmDLMainForm: TfrmDLMainForm
     Height = 213
     Align = alClient
     BevelOuter = bvNone
-    TabOrder = 2
+    TabOrder = 1
     ExplicitWidth = 624
     ExplicitHeight = 212
     object pnlWADFolder: TPanel
@@ -308,12 +309,13 @@ object frmDLMainForm: TfrmDLMainForm
           AlignWithMargins = True
           Left = 3
           Top = 3
-          Width = 62
+          Width = 308
           Height = 16
           Align = alTop
           Anchors = []
           Caption = 'IWAD Files'
           FocusControl = lbxIWADs
+          ExplicitWidth = 62
         end
         object lbxIWADs: TListBox
           AlignWithMargins = True
@@ -325,6 +327,8 @@ object frmDLMainForm: TfrmDLMainForm
           Anchors = []
           TabOrder = 0
           OnClick = lbxIWADsClick
+          ExplicitWidth = 306
+          ExplicitHeight = 144
         end
       end
       object pnlPWADs: TPanel
@@ -343,12 +347,13 @@ object frmDLMainForm: TfrmDLMainForm
           AlignWithMargins = True
           Left = 3
           Top = 3
-          Width = 65
+          Width = 308
           Height = 16
           Align = alTop
           Anchors = []
           Caption = 'PWAD Files'
           FocusControl = lbxPWADs
+          ExplicitWidth = 65
         end
         object lbxPWADs: TListBox
           AlignWithMargins = True
@@ -360,6 +365,8 @@ object frmDLMainForm: TfrmDLMainForm
           Anchors = []
           TabOrder = 0
           OnClick = lbxPWADsClick
+          ExplicitWidth = 306
+          ExplicitHeight = 144
         end
       end
     end

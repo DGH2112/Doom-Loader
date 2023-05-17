@@ -3,8 +3,8 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 5.323
-  @Date    14 May 2023
+  @Version 5.508
+  @Date    17 May 2023
   
 **)
 Unit DLMainForm;
@@ -83,6 +83,7 @@ Type
     Procedure UpdateLaunchBtn;
     Function  IsIWAD(Const strFileName : String) : Boolean;
     Procedure RecurseWADFolders(Const strFolder : String);
+    Procedure AddWADFileToList(Const ListBox : TListBox; Const strFileName, SelectedWAD : String);
   Public
   End;
 
@@ -123,6 +124,28 @@ Const
 
 {$R *.dfm}
 
+
+(**
+
+  This method adds the given WAD filename to the given listbox and optionally selects the item if it
+  matches the given selected item.
+
+  @precon  Listbox must be a valid instance.
+  @postcon The WWAD file is added to the listbox and optionally selected.
+
+  @param   ListBox     as a TListBox as a constant
+  @param   strFileName as a String as a constant
+  @param   SelectedWAD as a String as a constant
+
+**)
+Procedure TfrmDLMainForm.AddWADFileToList(Const ListBox : TListBox; Const strFileName,
+  SelectedWAD : String);
+
+Begin
+  ListBox.Items.Add(strFileName);
+  If CompareText(SelectedWAD, strFileName) = 0 Then
+    ListBox.ItemIndex := ListBox.Count - 1;
+End;
 
 (**
 
@@ -285,6 +308,7 @@ Procedure TfrmDLMainForm.FormCreate(Sender: TObject);
 
 Const
   strSeasonFallDoomLoaderIni = '\Season''s Fall\Doom Loader.ini';
+  strHEXDDWAD = 'HEXDD.wad';
 
 Begin
   FINIFileName := TPath.GetHomePath + strSeasonFallDoomLoaderIni;
@@ -293,7 +317,7 @@ Begin
   FIWADExceptions := TStringList.Create;
   FIWADExceptions.Sorted := True;
   FIWADExceptions.CaseSensitive := False;
-  FIWADExceptions.Add('HEXDD.wad');
+  FIWADExceptions.Add(strHEXDDWAD);
   LoadSettings;
   PopulateGameEngines;
   PopulateIWADs;
@@ -507,6 +531,17 @@ Begin
   RecurseWADFolders(edtWADFolder.Text);
 End;
 
+(**
+
+  This method recurses folders searching for WAD files and adds them to the IWAD or PWAD list boxes.
+
+  @precon  None.
+  @postcon The WAD files in the given folder are added to the list boxes and any sub-folders are also
+           searched.
+
+  @param   strFolder as a String as a constant
+
+**)
 Procedure TfrmDLMainForm.RecurseWADFolders(Const strFolder: String);
 
 Const
@@ -528,18 +563,8 @@ Begin
             strFileName :=  strFolder + '\' + recSearch.Name;
             Delete(strFileName, 1, Length(edtWADFolder.Text) + 1);
             Case IsIWAD(strFolder + '\' + recSearch.Name) Of
-              True:
-                Begin  
-                  lbxIWADs.Items.Add(strFileName);
-                  If CompareText(FSelectedIWAD, strFileName) = 0 Then
-                    lbxIWADs.ItemIndex := lbxIWADs.Count - 1;
-                End;
-              False:
-                Begin  
-                  lbxPWADs.Items.Add(strFileName);
-                  If CompareText(FSelectedPWAD, strFileName) = 0 Then
-                    lbxPWADs.ItemIndex := lbxPWADs.Count - 1;
-                End;
+              True:  AddWADFileToList(lbxIWADs, strFileName, FSelectedIWAD);
+              False: AddWADFileToList(lbxPWADs, strFileName, FSelectedPWAD);
             End;
           End;
         iResult := FindNext(recSearch);
