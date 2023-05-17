@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 5.876
+  @Version 5.985
   @Date    17 May 2023
   
 **)
@@ -36,11 +36,9 @@ Type
     pnlGameEngines: TPanel;
     pnlGameEngineBtns: TPanel;
     lblIWADs: TLabel;
-    lbxIWADs: TListBox;
     pnlIWADs: TPanel;
     pnlPWADs: TPanel;
     lblPWADs: TLabel;
-    lbxPWADs: TListBox;
     pnlWADFolder: TPanel;
     lblWADFolder: TLabel;
     edtWADFolder: TEdit;
@@ -55,6 +53,8 @@ Type
     pnlWADs: TPanel;
     edtExtraParams: TEdit;
     lblParams: TLabel;
+    tvIWADs: TTreeView;
+    tvPWADs: TTreeView;
     procedure btnAddClick(Sender: TObject);
     procedure btnBrowseClick(Sender: TObject);
     procedure btnDeleteClick(Sender: TObject);
@@ -63,8 +63,8 @@ Type
     procedure edtWADFolderChange(Sender: TObject);
     Procedure FormDestroy(Sender: TObject);
     Procedure FormCreate(Sender: TObject);
-    procedure lbxIWADsClick(Sender: TObject);
-    procedure lbxPWADsClick(Sender: TObject);
+    procedure tvIWADsClick(Sender: TObject);
+    procedure tvPWADsClick(Sender: TObject);
     procedure lvGameEnginesSelectItem(Sender: TObject; Item: TListItem; Selected:
         Boolean);
   Strict Private
@@ -79,11 +79,11 @@ Type
     Procedure LoadSettings;
     Procedure SaveSettings;
     Procedure PopulateGameEngines;
-    Procedure PopulateIWADs;
+    Procedure PopulateWADs;
     Procedure UpdateLaunchBtn;
     Function  IsIWAD(Const strFileName : String) : Boolean;
     Procedure RecurseWADFolders(Const strFolder : String);
-    Procedure AddWADFileToList(Const ListBox : TListBox; Const strFileName, SelectedWAD : String);
+    Procedure AddWADFileToList(Const TreeView : TTreeView; Const strFileName, SelectedWAD : String);
     Procedure LoadVersionInfo();
   Public
   End;
@@ -135,24 +135,26 @@ Const
 
 (**
 
-  This method adds the given WAD filename to the given listbox and optionally selects the item if it
+  This method adds the given WAD filename to the given treeview and optionally selects the item if it 
   matches the given selected item.
 
-  @precon  Listbox must be a valid instance.
-  @postcon The WWAD file is added to the listbox and optionally selected.
+  @precon  Treeview must be a valid instance.
+  @postcon The WWAD file is added to the treeview and optionally selected.
 
-  @param   ListBox     as a TListBox as a constant
+  @param   TreeView    as a TTreeView as a constant
   @param   strFileName as a String as a constant
   @param   SelectedWAD as a String as a constant
 
 **)
-Procedure TfrmDLMainForm.AddWADFileToList(Const ListBox : TListBox; Const strFileName,
+Procedure TfrmDLMainForm.AddWADFileToList(Const TreeView : TTreeView; Const strFileName,
   SelectedWAD : String);
 
+Var
+  Node : TTreeNode;
+  
 Begin
-  ListBox.Items.Add(strFileName);
-  If CompareText(SelectedWAD, strFileName) = 0 Then
-    ListBox.ItemIndex := ListBox.Count - 1;
+  Node := TreeView.Items.AddChild(Nil, strFileName);
+  Node.Selected := CompareText(SelectedWAD, strFileName) = 0;
 End;
 
 (**
@@ -276,7 +278,7 @@ Begin
     ), // Game Engine
     PChar(
       Format(strIWADCmd, [edtWADFolder.Text + '\' + FSelectedIWAD]) +
-      IfThen(lbxPWADs.ItemIndex > 0, Format(#32 + strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]), '') +
+      IfThen(tvPWADs.SelectionCount > 0, Format(#32 + strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]), '') +
       IfThen(Length(edtExtraParams.Text) > 0, #32 + edtExtraParams.Text, '')
     ), // Parameter
     PChar(
@@ -299,7 +301,7 @@ End;
 Procedure TfrmDLMainForm.edtWADFolderChange(Sender: TObject);
 
 Begin
-  PopulateIWADs;
+  PopulateWADs;
 End;
 
 (**
@@ -330,7 +332,7 @@ Begin
   LoadVersionInfo;
   LoadSettings;
   PopulateGameEngines;
-  PopulateIWADs;
+  PopulateWADs;
   UpdateLaunchBtn;
 End;
 
@@ -395,40 +397,6 @@ Begin
   Finally
     FileStream.Free;
   End;
-End;
-
-(**
-
-  This is an on click event handler for the IWAD list box.
-
-  @precon  None.
-  @postcon Stored the selected item and updates the launch button.
-
-  @param   Sender as a TObject
-
-**)
-Procedure TfrmDLMainForm.lbxIWADsClick(Sender: TObject);
-
-Begin
-  FSelectedIWAD := lbxIWADs.Items[lbxIWADs.ItemIndex];
-  UpdateLaunchBtn;
-End;
-
-(**
-
-  This is an on click event handler for the PWAD list box.
-
-  @precon  None.
-  @postcon Stored the selected item and updates the launch button.
-
-  @param   Sender as a TObject
-
-**)
-Procedure TfrmDLMainForm.lbxPWADsClick(Sender: TObject);
-
-Begin
-  FSelectedPWAD := lbxPWADs.Items[lbxPWADs.ItemIndex];
-  UpdateLaunchBtn;
 End;
 
 (**
@@ -603,15 +571,19 @@ End;
   @postcon The list of WAD files is populated.
 
 **)
-Procedure TfrmDLMainForm.PopulateIWADs;
+Procedure TfrmDLMainForm.PopulateWADs;
 
 Const
   strNone = '(none)';
 
+Var
+  Item: TTreeNode;
+  
 Begin
-  lbxIWADs.Clear;
-  lbxPWADs.Clear;
-  lbxPWADs.Items.Add(strNone); //: @bug This is not checked for selection.
+  tvIWADs.Items.Clear;
+  tvPWADs.Items.Clear;
+  Item := tvPWADs.Items.AddChild(Nil, strNone);
+  Item.Selected := CompareText(FSelectedPWAD, strNone) = 0;
   RecurseWADFolders(edtWADFolder.Text);
 End;
 
@@ -647,8 +619,8 @@ Begin
             strFileName :=  strFolder + '\' + recSearch.Name;
             Delete(strFileName, 1, Length(edtWADFolder.Text) + 1);
             Case IsIWAD(strFolder + '\' + recSearch.Name) Of
-              True:  AddWADFileToList(lbxIWADs, strFileName, FSelectedIWAD);
-              False: AddWADFileToList(lbxPWADs, strFileName, FSelectedPWAD);
+              True:  AddWADFileToList(tvIWADs, strFileName, FSelectedIWAD);
+              False: AddWADFileToList(tvPWADs, strFileName, FSelectedPWAD);
             End;
           End;
         iResult := FindNext(recSearch);
@@ -706,6 +678,40 @@ End;
 
 (**
 
+  This is an on click event handler for the IWAD list box.
+
+  @precon  None.
+  @postcon Stored the selected item and updates the launch button.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.tvIWADsClick(Sender: TObject);
+
+Begin
+  FSelectedIWAD := tvIWADs.Selected.Text;
+  UpdateLaunchBtn;
+End;
+
+(**
+
+  This is an on click event handler for the PWAD list box.
+
+  @precon  None.
+  @postcon Stored the selected item and updates the launch button.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.tvPWADsClick(Sender: TObject);
+
+Begin
+  FSelectedPWAD := tvPWADs.Selected.Text;
+  UpdateLaunchBtn;
+End;
+
+(**
+
   This method updates the enabled property of the launch button, i.e., the selections in the main form
   need to be valid to launch the game.
 
@@ -718,8 +724,8 @@ Procedure TfrmDLMainForm.UpdateLaunchBtn;
 Begin
   btnLaunch.Enabled :=
     (lvGameEngines.SelCount = 1) And
-    (lbxIWADs.ItemIndex > -1) And
-    (lbxPWADs.ItemIndex > -1);
+    (tvIWADs.SelectionCount > 0) And
+    (tvPWADs.SelectionCount > 0);
 End;
 
 End.

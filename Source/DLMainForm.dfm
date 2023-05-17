@@ -314,10 +314,10 @@ object frmDLMainForm: TfrmDLMainForm
           Align = alTop
           Anchors = []
           Caption = 'IWAD Files'
-          FocusControl = lbxIWADs
+          FocusControl = tvIWADs
           ExplicitWidth = 62
         end
-        object lbxIWADs: TListBox
+        object tvIWADs: TTreeView
           AlignWithMargins = True
           Left = 3
           Top = 25
@@ -325,10 +325,13 @@ object frmDLMainForm: TfrmDLMainForm
           Height = 145
           Align = alClient
           Anchors = []
+          HideSelection = False
+          Indent = 19
+          ReadOnly = True
+          RowSelect = True
+          ShowRoot = False
           TabOrder = 0
-          OnClick = lbxIWADsClick
-          ExplicitWidth = 306
-          ExplicitHeight = 144
+          OnClick = tvIWADsClick
         end
       end
       object pnlPWADs: TPanel
@@ -352,10 +355,10 @@ object frmDLMainForm: TfrmDLMainForm
           Align = alTop
           Anchors = []
           Caption = 'PWAD Files'
-          FocusControl = lbxPWADs
+          FocusControl = tvPWADs
           ExplicitWidth = 65
         end
-        object lbxPWADs: TListBox
+        object tvPWADs: TTreeView
           AlignWithMargins = True
           Left = 3
           Top = 25
@@ -363,10 +366,13 @@ object frmDLMainForm: TfrmDLMainForm
           Height = 145
           Align = alClient
           Anchors = []
+          HideSelection = False
+          Indent = 19
+          ReadOnly = True
+          RowSelect = True
+          ShowRoot = False
           TabOrder = 0
-          OnClick = lbxPWADsClick
-          ExplicitWidth = 306
-          ExplicitHeight = 144
+          OnClick = tvPWADsClick
         end
       end
     end
