@@ -3,12 +3,14 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 6.073
+  @Version 10.710
   @Date    17 May 2023
 
   @done    Change the selection implementation to use the hierarchy of the nodes.
-  @todo    Implement Hierarchical WAD files.
+  @done    Implement Hierarchical WAD files.
   @todo    Remember IWAD associated with the selected PWAD.
+  @todo    Make the extra options be remembered in a combo box so they can be recalled.
+  @todo    Remember extra options per IWAD so different games can have different extra options.
   
 **)
 Unit DLMainForm;
@@ -90,6 +92,8 @@ Type
     Procedure AddWADFileToList(Const TreeView : TTreeView; Const strFileName, SelectedWAD : String);
     Procedure LoadVersionInfo();
     Function  TreePath(Const Node : TTreeNode) : String;
+    Function  Find(Const TreeView : TTreeView; Const Node : TTreeNode;
+      Const strFileNamePart : String) : TTreeNode;
   Public
   End;
 
@@ -155,11 +159,24 @@ Procedure TfrmDLMainForm.AddWADFileToList(Const TreeView : TTreeView; Const strF
   SelectedWAD : String);
 
 Var
+  astrFileName : TArray<String>;
+  iPath: Integer;
   Node : TTreeNode;
+  ParentNode : TTreeNode;
   
 Begin
-  Node := TreeView.Items.AddChild(Nil, strFileName);
-  Node.Selected := CompareText(SelectedWAD, strFileName) = 0;
+  astrFileName := strFileName.Split(['\']);
+  ParentNode := Nil;
+  For iPath := 0 To Pred(High(astrFileName)) Do // Process path parts not filename
+    Begin
+      Node := Find(Treeview, ParentNode, astrFileName[iPath]);
+      If Not Assigned(Node) Then
+        ParentNode := TreeView.Items.AddChild(ParentNode, astrFileName[iPath])
+      Else
+        ParentNode := Node;
+    End;
+  Node := TreeView.Items.AddChild(ParentNode, astrFileName[High(astrFileName)]);
+  Node.Selected := CompareText(SelectedWAD, TreePath(Node)) = 0;
 End;
 
 (**
@@ -263,6 +280,8 @@ End;
   @precon  None.
   @postcon Asks the shell to load the game engine with the selected WAD files.
 
+  @todo    Change the below to use CreateProcess().
+
   @param   Sender as a TObject
 
 **)
@@ -307,6 +326,42 @@ Procedure TfrmDLMainForm.edtWADFolderChange(Sender: TObject);
 
 Begin
   PopulateWADs;
+End;
+
+(**
+
+  This function attempts to find the tree node in the given treeview with the given parent node and the
+  given file name part.
+
+  @precon  Treeview and Node must be valid instances.
+  @postcon Returns the node if found else returns nil.
+
+  @note    Really wish I used VirtualTreeview here as this is a bad linear search. Not using VTVs to keep
+           the dependencies to stock Delphi components. This can change if needed.
+
+  @param   TreeView        as a TTreeView as a constant
+  @param   Node            as a TTreeNode as a constant
+  @param   strFileNamePart as a String as a constant
+  @return  a TTreeNode
+
+**)
+Function TfrmDLMainForm.Find(Const TreeView : TTreeView; Const Node: TTreeNode; Const strFileNamePart: String): TTreeNode;
+
+Var
+  i : Integer;
+  N : TTreeNode;
+  
+Begin
+  Result := Nil;
+  For i := 0 To TreeView.Items.Count - 1 Do
+    Begin
+      N := Treeview.Items[i];
+      If (N.Parent = Node) And (CompareText(N.Text, strFileNamePart) = 0) Then
+        Begin
+          Result := N;
+          Break;
+        End;
+    End;
 End;
 
 (**
