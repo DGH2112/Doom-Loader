@@ -1,0 +1,45 @@
+[Setup]
+IncBuild.Make.Base=1
+IncBuild.Build.Base=0
+IncBuild.Check.Base=0
+IncBuild.MakeUnit.Base=0
+IncBuild.Make.Debug=1
+IncBuild.Build.Debug=0
+IncBuild.Check.Debug=0
+IncBuild.MakeUnit.Debug=0
+IncBuild.Make.Release=0
+IncBuild.Build.Release=0
+IncBuild.Check.Release=0
+IncBuild.MakeUnit.Release=0
+CopyVersionInfoFrom=
+ExcludedResExts=.dcr
+EnabledVersionInfo=1
+IncludeInProject=1
+CompileWithBRCC32=0
+MajorVer=1
+MinorVer=0
+ReleaseVer=0
+BuildVer=46
+ResourceName=DoomLoaderITHVerInfo
+WarnBefore=1
+WarnAfter=1
+SaveModifiedFilesBeforeZipping=0
+
+[Zipping]
+Enabled=0
+ZipFile=
+BasePath=D:\Documents\RAD Studio\Applications\Doom Loader\
+ExclusionFiles=
+
+[VersionInfo]
+CompanyName=David Hoyle
+FileDescription=DOOM Loader: A simple application to allow you to select various gaming engines to launch different IWAD and PADs.
+FileVersion=1.0.0.46
+InternalName=DOOMLoader
+LegalCopyright=David Hoyle
+LegalTrademarks=David Hoyle
+OriginalFilename=DOOMLoader
+ProductName=DOOMLoader
+ProductVersion=1.0
+Comments=DOOM Loader: A simple application to allow you to select various gaming engines to launch different IWAD and PADs.
+

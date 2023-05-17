@@ -1,8 +1,10 @@
 Program DoomLoader;
 
-Uses
+{$R 'DoomLoaderITHVerInfo.res' 'DoomLoaderITHVerInfo.RC'}
+
+uses
   Vcl.Forms,
-  DLMainForm In 'Source\DLMainForm.pas' {frmDLMainForm};
+  DLMainForm in 'Source\DLMainForm.pas' {frmDLMainForm};
 
 {$R *.res}
 

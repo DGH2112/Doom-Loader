@@ -7,6 +7,7 @@ object frmDLMainForm: TfrmDLMainForm
   Color = clBtnFace
   Constraints.MinHeight = 480
   Constraints.MinWidth = 640
+  DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -13
@@ -169,7 +170,7 @@ object frmDLMainForm: TfrmDLMainForm
     Height = 41
     Align = alBottom
     BevelOuter = bvNone
-    TabOrder = 1
+    TabOrder = 2
     ExplicitTop = 400
     ExplicitWidth = 624
     DesignSize = (
@@ -185,7 +186,7 @@ object frmDLMainForm: TfrmDLMainForm
       FocusControl = edtExtraParams
     end
     object btnLaunch: TBitBtn
-      Left = 540
+      Left = 536
       Top = 6
       Width = 85
       Height = 25
@@ -193,17 +194,18 @@ object frmDLMainForm: TfrmDLMainForm
       Caption = '&Launch'
       Default = True
       ParentDoubleBuffered = True
-      TabOrder = 0
+      TabOrder = 1
       OnClick = btnLaunchClick
-      ExplicitLeft = 536
+      ExplicitLeft = 532
     end
     object edtExtraParams: TEdit
       Left = 64
       Top = 6
-      Width = 470
+      Width = 466
       Height = 24
       Anchors = [akLeft, akTop, akRight]
-      TabOrder = 1
+      TabOrder = 0
+      ExplicitWidth = 462
     end
   end
   object pnlWADs: TPanel
@@ -213,7 +215,7 @@ object frmDLMainForm: TfrmDLMainForm
     Height = 213
     Align = alClient
     BevelOuter = bvNone
-    TabOrder = 2
+    TabOrder = 1
     ExplicitWidth = 624
     ExplicitHeight = 212
     object pnlWADFolder: TPanel
@@ -240,16 +242,16 @@ object frmDLMainForm: TfrmDLMainForm
       object edtWADFolder: TEdit
         Left = 96
         Top = 6
-        Width = 438
+        Width = 434
         Height = 24
         Anchors = [akLeft, akTop, akRight]
         ReadOnly = True
         TabOrder = 0
         OnChange = edtWADFolderChange
-        ExplicitWidth = 434
+        ExplicitWidth = 430
       end
       object btnBrowse: TBitBtn
-        Left = 540
+        Left = 536
         Top = 6
         Width = 85
         Height = 25
@@ -258,7 +260,7 @@ object frmDLMainForm: TfrmDLMainForm
         ParentDoubleBuffered = True
         TabOrder = 1
         OnClick = btnBrowseClick
-        ExplicitLeft = 536
+        ExplicitLeft = 532
       end
     end
     object gpnlBottomLayout: TGridPanel
@@ -302,20 +304,19 @@ object frmDLMainForm: TfrmDLMainForm
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 0
-        ExplicitWidth = 312
-        ExplicitHeight = 172
         object lblIWADs: TLabel
           AlignWithMargins = True
           Left = 3
           Top = 3
-          Width = 62
+          Width = 308
           Height = 16
           Align = alTop
           Anchors = []
           Caption = 'IWAD Files'
-          FocusControl = lbxIWADs
+          FocusControl = tvIWADs
+          ExplicitWidth = 62
         end
-        object lbxIWADs: TListBox
+        object tvIWADs: TTreeView
           AlignWithMargins = True
           Left = 3
           Top = 25
@@ -323,8 +324,12 @@ object frmDLMainForm: TfrmDLMainForm
           Height = 145
           Align = alClient
           Anchors = []
+          HideSelection = False
+          Indent = 19
+          ReadOnly = True
+          RowSelect = True
           TabOrder = 0
-          OnClick = lbxIWADsClick
+          OnClick = tvIWADsClick
         end
       end
       object pnlPWADs: TPanel
@@ -336,21 +341,19 @@ object frmDLMainForm: TfrmDLMainForm
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitLeft = 312
-        ExplicitWidth = 312
-        ExplicitHeight = 172
         object lblPWADs: TLabel
           AlignWithMargins = True
           Left = 3
           Top = 3
-          Width = 65
+          Width = 308
           Height = 16
           Align = alTop
           Anchors = []
           Caption = 'PWAD Files'
-          FocusControl = lbxPWADs
+          FocusControl = tvPWADs
+          ExplicitWidth = 65
         end
-        object lbxPWADs: TListBox
+        object tvPWADs: TTreeView
           AlignWithMargins = True
           Left = 3
           Top = 25
@@ -358,8 +361,12 @@ object frmDLMainForm: TfrmDLMainForm
           Height = 145
           Align = alClient
           Anchors = []
+          HideSelection = False
+          Indent = 19
+          ReadOnly = True
+          RowSelect = True
           TabOrder = 0
-          OnClick = lbxPWADsClick
+          OnClick = tvPWADsClick
         end
       end
     end

@@ -3,8 +3,14 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 5.323
-  @Date    14 May 2023
+  @Version 10.710
+  @Date    17 May 2023
+
+  @done    Change the selection implementation to use the hierarchy of the nodes.
+  @done    Implement Hierarchical WAD files.
+  @todo    Remember IWAD associated with the selected PWAD.
+  @todo    Make the extra options be remembered in a combo box so they can be recalled.
+  @todo    Remember extra options per IWAD so different games can have different extra options.
   
 **)
 Unit DLMainForm;
@@ -36,11 +42,9 @@ Type
     pnlGameEngines: TPanel;
     pnlGameEngineBtns: TPanel;
     lblIWADs: TLabel;
-    lbxIWADs: TListBox;
     pnlIWADs: TPanel;
     pnlPWADs: TPanel;
     lblPWADs: TLabel;
-    lbxPWADs: TListBox;
     pnlWADFolder: TPanel;
     lblWADFolder: TLabel;
     edtWADFolder: TEdit;
@@ -55,6 +59,8 @@ Type
     pnlWADs: TPanel;
     edtExtraParams: TEdit;
     lblParams: TLabel;
+    tvIWADs: TTreeView;
+    tvPWADs: TTreeView;
     procedure btnAddClick(Sender: TObject);
     procedure btnBrowseClick(Sender: TObject);
     procedure btnDeleteClick(Sender: TObject);
@@ -63,8 +69,8 @@ Type
     procedure edtWADFolderChange(Sender: TObject);
     Procedure FormDestroy(Sender: TObject);
     Procedure FormCreate(Sender: TObject);
-    procedure lbxIWADsClick(Sender: TObject);
-    procedure lbxPWADsClick(Sender: TObject);
+    procedure tvIWADsClick(Sender: TObject);
+    procedure tvPWADsClick(Sender: TObject);
     procedure lvGameEnginesSelectItem(Sender: TObject; Item: TListItem; Selected:
         Boolean);
   Strict Private
@@ -79,10 +85,15 @@ Type
     Procedure LoadSettings;
     Procedure SaveSettings;
     Procedure PopulateGameEngines;
-    Procedure PopulateIWADs;
+    Procedure PopulateWADs;
     Procedure UpdateLaunchBtn;
     Function  IsIWAD(Const strFileName : String) : Boolean;
     Procedure RecurseWADFolders(Const strFolder : String);
+    Procedure AddWADFileToList(Const TreeView : TTreeView; Const strFileName, SelectedWAD : String);
+    Procedure LoadVersionInfo();
+    Function  TreePath(Const Node : TTreeNode) : String;
+    Function  Find(Const TreeView : TTreeView; Const Node : TTreeNode;
+      Const strFileNamePart : String) : TTreeNode;
   Public
   End;
 
@@ -115,14 +126,58 @@ Const
   strSplitterHeightINIKey = 'SplitterHeight';
   (** A constant to define the selected Game Engine. **)
   strSelectGameEngineINIKey = 'Select Game Engine';
+  (** A constant to define the main INI section for the application settings. **)
   strSetupINISection = 'Setup';
+  (** A constant to define the INI Key for the folder in which the WAD files are stored. **)
   strWADFolderINIKey = 'WAD Folder';
+  (** A constant to define the INI Key for the selected IWAD file. **)
   strSelectedIWADINIKey = 'Selected IWAD';
+  (** A constant to define the INI Key for the selected PWAD file. **)
   strSelectedPWADINIKey = 'Selected PWAD';
+  (** A constant to define the INI Key for the extra command line parameters. **)
   strExtraParamsINIKey = 'Extra Params';
+  (** A constant to define the INI section for the list of IWAD Exceptions, i.e. really PWAD. **)
+  strIWADExceptions = 'IWAD Exceptions';
 
 {$R *.dfm}
 
+
+(**
+
+  This method adds the given WAD filename to the given treeview and optionally selects the item if it 
+  matches the given selected item.
+
+  @precon  Treeview must be a valid instance.
+  @postcon The WWAD file is added to the treeview and optionally selected.
+
+  @param   TreeView    as a TTreeView as a constant
+  @param   strFileName as a String as a constant
+  @param   SelectedWAD as a String as a constant
+
+**)
+Procedure TfrmDLMainForm.AddWADFileToList(Const TreeView : TTreeView; Const strFileName,
+  SelectedWAD : String);
+
+Var
+  astrFileName : TArray<String>;
+  iPath: Integer;
+  Node : TTreeNode;
+  ParentNode : TTreeNode;
+  
+Begin
+  astrFileName := strFileName.Split(['\']);
+  ParentNode := Nil;
+  For iPath := 0 To Pred(High(astrFileName)) Do // Process path parts not filename
+    Begin
+      Node := Find(Treeview, ParentNode, astrFileName[iPath]);
+      If Not Assigned(Node) Then
+        ParentNode := TreeView.Items.AddChild(ParentNode, astrFileName[iPath])
+      Else
+        ParentNode := Node;
+    End;
+  Node := TreeView.Items.AddChild(ParentNode, astrFileName[High(astrFileName)]);
+  Node.Selected := CompareText(SelectedWAD, TreePath(Node)) = 0;
+End;
 
 (**
 
@@ -225,6 +280,8 @@ End;
   @precon  None.
   @postcon Asks the shell to load the game engine with the selected WAD files.
 
+  @todo    Change the below to use CreateProcess().
+
   @param   Sender as a TObject
 
 **)
@@ -245,7 +302,7 @@ Begin
     ), // Game Engine
     PChar(
       Format(strIWADCmd, [edtWADFolder.Text + '\' + FSelectedIWAD]) +
-      IfThen(lbxPWADs.ItemIndex > 0, Format(#32 + strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]), '') +
+      IfThen(tvPWADs.SelectionCount > 0, Format(#32 + strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]), '') +
       IfThen(Length(edtExtraParams.Text) > 0, #32 + edtExtraParams.Text, '')
     ), // Parameter
     PChar(
@@ -268,7 +325,43 @@ End;
 Procedure TfrmDLMainForm.edtWADFolderChange(Sender: TObject);
 
 Begin
-  PopulateIWADs;
+  PopulateWADs;
+End;
+
+(**
+
+  This function attempts to find the tree node in the given treeview with the given parent node and the
+  given file name part.
+
+  @precon  Treeview and Node must be valid instances.
+  @postcon Returns the node if found else returns nil.
+
+  @note    Really wish I used VirtualTreeview here as this is a bad linear search. Not using VTVs to keep
+           the dependencies to stock Delphi components. This can change if needed.
+
+  @param   TreeView        as a TTreeView as a constant
+  @param   Node            as a TTreeNode as a constant
+  @param   strFileNamePart as a String as a constant
+  @return  a TTreeNode
+
+**)
+Function TfrmDLMainForm.Find(Const TreeView : TTreeView; Const Node: TTreeNode; Const strFileNamePart: String): TTreeNode;
+
+Var
+  i : Integer;
+  N : TTreeNode;
+  
+Begin
+  Result := Nil;
+  For i := 0 To TreeView.Items.Count - 1 Do
+    Begin
+      N := Treeview.Items[i];
+      If (N.Parent = Node) And (CompareText(N.Text, strFileNamePart) = 0) Then
+        Begin
+          Result := N;
+          Break;
+        End;
+    End;
 End;
 
 (**
@@ -285,6 +378,7 @@ Procedure TfrmDLMainForm.FormCreate(Sender: TObject);
 
 Const
   strSeasonFallDoomLoaderIni = '\Season''s Fall\Doom Loader.ini';
+  strHEXDDWAD = 'HEXDD.wad';
 
 Begin
   FINIFileName := TPath.GetHomePath + strSeasonFallDoomLoaderIni;
@@ -293,10 +387,12 @@ Begin
   FIWADExceptions := TStringList.Create;
   FIWADExceptions.Sorted := True;
   FIWADExceptions.CaseSensitive := False;
-  FIWADExceptions.Add('HEXDD.wad');
+  FIWADExceptions.Duplicates := dupIgnore;
+  FIWADExceptions.Add(strHEXDDWAD);
+  LoadVersionInfo;
   LoadSettings;
   PopulateGameEngines;
-  PopulateIWADs;
+  PopulateWADs;
   UpdateLaunchBtn;
 End;
 
@@ -365,40 +461,6 @@ End;
 
 (**
 
-  This is an on click event handler for the IWAD list box.
-
-  @precon  None.
-  @postcon Stored the selected item and updates the launch button.
-
-  @param   Sender as a TObject
-
-**)
-Procedure TfrmDLMainForm.lbxIWADsClick(Sender: TObject);
-
-Begin
-  FSelectedIWAD := lbxIWADs.Items[lbxIWADs.ItemIndex];
-  UpdateLaunchBtn;
-End;
-
-(**
-
-  This is an on click event handler for the PWAD list box.
-
-  @precon  None.
-  @postcon Stored the selected item and updates the launch button.
-
-  @param   Sender as a TObject
-
-**)
-Procedure TfrmDLMainForm.lbxPWADsClick(Sender: TObject);
-
-Begin
-  FSelectedPWAD := lbxPWADs.Items[lbxPWADs.ItemIndex];
-  UpdateLaunchBtn;
-End;
-
-(**
-
   This method loads the applications settings.
 
   @precon  None.
@@ -409,7 +471,7 @@ Procedure TfrmDLMainForm.LoadSettings;
 
 Var
   sl : TStringList;
-  strGameEngine: String;
+  strItem: String;
 
 Begin
   Top := FINIFile.ReadInteger(strPositionINISection, strTopINIKey, Top);
@@ -421,19 +483,93 @@ Begin
   sl := TStringList.Create;
   Try
     FINIFile.ReadSection(strGameEnginesINISection, sl);
-    For strGameEngine In sl Do
-      FGameEngines.AddPair(
-        strGameEngine,
-        FINIFile.ReadString(strGameEnginesINISection, strGameEngine, '')
-      );
-    FSelectedGameEngine := FINIFile.ReadString(strSetupINISection, strSelectGameEngineINIKey, '');
-    edtWADFolder.Text := FINIFile.ReadString(strSetupINISection, strWADFolderINIKey, '');
-    FSelectedIWAD := FINIFile.ReadString(strSetupINISection, strSelectedIWADINIKey, '');
-    FSelectedPWAD := FINIFile.ReadString(strSetupINISection, strSelectedPWADINIKey, '');
-    edtExtraParams.Text := FINIFile.ReadString(strSetupINISection, strExtraParamsINIKey, '');
+    For strItem In sl Do
+      FGameEngines.AddPair(strItem, FINIFile.ReadString(strGameEnginesINISection, strItem, ''));
+    FINIFile.ReadSection(strIWADExceptions, sl);
+    For strItem In sl Do
+      FIWADExceptions.Add(strItem);
   Finally
     sl.Free;
   End;
+  FSelectedGameEngine := FINIFile.ReadString(strSetupINISection, strSelectGameEngineINIKey, '');
+  edtWADFolder.Text := FINIFile.ReadString(strSetupINISection, strWADFolderINIKey, '');
+  FSelectedIWAD := FINIFile.ReadString(strSetupINISection, strSelectedIWADINIKey, '');
+  FSelectedPWAD := FINIFile.ReadString(strSetupINISection, strSelectedPWADINIKey, '');
+  edtExtraParams.Text := FINIFile.ReadString(strSetupINISection, strExtraParamsINIKey, '');
+End;
+
+(**
+
+  This method loads the applications build information from the resources.
+
+  @precon  None.
+  @postcon The build information is loaded and reflected in the application title and main form caption.
+
+**)
+Procedure TfrmDLMainForm.LoadVersionInfo;
+
+Type
+  TBuildInfo = Record
+    FMajor  : Integer;
+    FMinor  : Integer;
+    FBugFix :Integer;
+    FBuild  : Integer;
+  End;
+
+Const
+  strBugFix = ' abcdefghijklmnopqrstuvwxyz';
+  iShiftRigh = 16;
+  iWordMask = $FFFF;
+  {$IFDEF DEBUG}
+  {$IFDEF WIN32}
+  strBitness = '32-Bit ';
+  {$ELSE WIN32}
+  strBitness = '64-Bit ';
+  {$ENDIF WIN32}
+  {$ENDIF DEBUG}
+
+ResourceString
+  {$IFDEF DEBUG}
+  strBuild = ' %d.%d%s BETA ' + strBitness + '(DEBUG Build %d.%d.%d.%d)';
+  {$ELSE}
+  strBuild = ' %d.%d%s';
+  {$ENDIF DEBUG}
+
+Var
+  VerInfoSize: DWORD;
+  VerInfo: Pointer;
+  VerValueSize: DWORD;
+  VerValue: PVSFixedFileInfo;
+  Dummy: DWORD;
+  BuildInfo : TBuildInfo;
+  
+Begin
+  BuildInfo.FMajor := 0;
+  BuildInfo.FMinor := 0;
+  BuildInfo.FBugFix := 0;
+  BuildInfo.FBuild := 0;
+  VerInfoSize := GetFileVersionInfoSize(PChar(ParamStr(0)), Dummy);
+  If VerInfoSize <> 0 Then
+    Begin
+      GetMem(VerInfo, VerInfoSize);
+      GetFileVersionInfo(PChar(ParamStr(0)), 0, VerInfoSize, VerInfo);
+      VerQueryValue(VerInfo, '\', Pointer(VerValue), VerValueSize);
+      BuildInfo.FMajor := VerValue^.dwFileVersionMS Shr iShiftRigh;
+      BuildInfo.FMinor := VerValue^.dwFileVersionMS And iWordMask;
+      BuildInfo.FBugfix := VerValue^.dwFileVersionLS Shr iShiftRigh;
+      BuildInfo.FBuild := VerValue^.dwFileVersionLS And iWordMask;
+      FreeMem(VerInfo, VerInfoSize);
+    End;
+  Application.Title := Application.Title + Format(strBuild, [
+    BuildInfo.FMajor,
+    BuildInfo.FMinor,
+    strBugFix[Succ(BuildInfo.FBugFix)],
+    BuildInfo.FMajor,
+    BuildInfo.FMinor,
+    BuildInfo.FBugFix,
+    BuildInfo.FBuild
+  ]);
+  Caption := Application.Title;
 End;
 
 (**
@@ -495,18 +631,33 @@ End;
   @postcon The list of WAD files is populated.
 
 **)
-Procedure TfrmDLMainForm.PopulateIWADs;
+Procedure TfrmDLMainForm.PopulateWADs;
 
 Const
   strNone = '(none)';
 
+Var
+  Item: TTreeNode;
+  
 Begin
-  lbxIWADs.Clear;
-  lbxPWADs.Clear;
-  lbxPWADs.Items.Add(strNone);
+  tvIWADs.Items.Clear;
+  tvPWADs.Items.Clear;
+  Item := tvPWADs.Items.AddChild(Nil, strNone);
+  Item.Selected := CompareText(FSelectedPWAD, strNone) = 0;
   RecurseWADFolders(edtWADFolder.Text);
 End;
 
+(**
+
+  This method recurses folders searching for WAD files and adds them to the IWAD or PWAD list boxes.
+
+  @precon  None.
+  @postcon The WAD files in the given folder are added to the list boxes and any sub-folders are also
+           searched.
+
+  @param   strFolder as a String as a constant
+
+**)
 Procedure TfrmDLMainForm.RecurseWADFolders(Const strFolder: String);
 
 Const
@@ -528,18 +679,8 @@ Begin
             strFileName :=  strFolder + '\' + recSearch.Name;
             Delete(strFileName, 1, Length(edtWADFolder.Text) + 1);
             Case IsIWAD(strFolder + '\' + recSearch.Name) Of
-              True:
-                Begin  
-                  lbxIWADs.Items.Add(strFileName);
-                  If CompareText(FSelectedIWAD, strFileName) = 0 Then
-                    lbxIWADs.ItemIndex := lbxIWADs.Count - 1;
-                End;
-              False:
-                Begin  
-                  lbxPWADs.Items.Add(strFileName);
-                  If CompareText(FSelectedPWAD, strFileName) = 0 Then
-                    lbxPWADs.ItemIndex := lbxPWADs.Count - 1;
-                End;
+              True:  AddWADFileToList(tvIWADs, strFileName, FSelectedIWAD);
+              False: AddWADFileToList(tvPWADs, strFileName, FSelectedPWAD);
             End;
           End;
         iResult := FindNext(recSearch);
@@ -572,7 +713,7 @@ End;
 Procedure TfrmDLMainForm.SaveSettings;
 
 Var
-  iGameEngine: Integer;
+  i: Integer;
 
 Begin
   FINIFile.WriteInteger(strPositionINISection, strTopINIKey, Top);
@@ -581,9 +722,11 @@ Begin
   FINIFile.WriteInteger(strPositionINISection, strHeightINIKey, Height);
   FINIFile.WriteInteger(strPositionINISection, strSplitterHeightINIKey, pnlGameEngines.Height);
   FINIFile.EraseSection(strGameEnginesINISection);
-  For iGameEngine := 0 To FGameEngines.Count - 1 Do
-    FINIFile.WriteString(strGameEnginesINISection, FGameEngines.Names[iGameEngine],
-      FGameEngines.ValueFromIndex[iGameEngine]);
+  For i := 0 To FGameEngines.Count - 1 Do
+    FINIFile.WriteString(strGameEnginesINISection, FGameEngines.Names[i], FGameEngines.ValueFromIndex[i]);
+  FINIFile.EraseSection(strIWADExceptions);
+  For i := 0 To FIWADExceptions.Count - 1 Do
+    FINIFile.WriteString(strIWADExceptions, FIWADExceptions[i], FIWADExceptions[i]);
   FINIFile.WriteString(strSetupINISection, strSelectGameEngineINIKey, FSelectedGameEngine);
   FINIFile.WriteString(strSetupINISection, strWADFolderINIKey, edtWADFolder.Text);
   FINIFile.WriteString(strSetupINISection, strSelectedIWADINIKey, FSelectedIWAD);
@@ -591,6 +734,68 @@ Begin
   FINIFile.WriteString(strSetupINISection, strExtraParamsINIKey, edtExtraParams.Text);
   If FINIFile.Modified Then
     FINIFile.UpdateFile;
+End;
+
+(**
+
+  This method returns the filename and parent folders for the selected node.
+
+  @precon  Node must be a valid instance.
+  @postcon Returns the filename and parent folders for the selected node.
+
+  @param   Node as a TTreeNode as a constant
+  @return  a String
+
+**)
+Function TfrmDLMainForm.TreePath(Const Node: TTreeNode): String;
+
+Var
+  N : TTreeNode;
+  
+Begin
+  Result := '';
+  N := Node;
+  While Assigned(N) Do
+    Begin
+      If Result.Length > 0 Then
+        Result := '\' + Result;
+      Result := N.Text + Result;
+      N := N.Parent;
+    End;
+End;
+
+(**
+
+  This is an on click event handler for the IWAD list box.
+
+  @precon  None.
+  @postcon Stored the selected item and updates the launch button.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.tvIWADsClick(Sender: TObject);
+
+Begin
+  FSelectedIWAD := TreePath(tvIWADs.Selected);
+  UpdateLaunchBtn;
+End;
+
+(**
+
+  This is an on click event handler for the PWAD list box.
+
+  @precon  None.
+  @postcon Stored the selected item and updates the launch button.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.tvPWADsClick(Sender: TObject);
+
+Begin
+  FSelectedPWAD := TreePath(tvPWADs.Selected);
+  UpdateLaunchBtn;
 End;
 
 (**
@@ -607,8 +812,8 @@ Procedure TfrmDLMainForm.UpdateLaunchBtn;
 Begin
   btnLaunch.Enabled :=
     (lvGameEngines.SelCount = 1) And
-    (lbxIWADs.ItemIndex > -1) And
-    (lbxPWADs.ItemIndex > -1);
+    (tvIWADs.SelectionCount > 0) And
+    (tvPWADs.SelectionCount > 0);
 End;
 
 End.
