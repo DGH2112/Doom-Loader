@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 5.734
+  @Version 5.876
   @Date    17 May 2023
   
 **)
@@ -117,11 +117,18 @@ Const
   strSplitterHeightINIKey = 'SplitterHeight';
   (** A constant to define the selected Game Engine. **)
   strSelectGameEngineINIKey = 'Select Game Engine';
+  (** A constant to define the main INI section for the application settings. **)
   strSetupINISection = 'Setup';
+  (** A constant to define the INI Key for the folder in which the WAD files are stored. **)
   strWADFolderINIKey = 'WAD Folder';
+  (** A constant to define the INI Key for the selected IWAD file. **)
   strSelectedIWADINIKey = 'Selected IWAD';
+  (** A constant to define the INI Key for the selected PWAD file. **)
   strSelectedPWADINIKey = 'Selected PWAD';
+  (** A constant to define the INI Key for the extra command line parameters. **)
   strExtraParamsINIKey = 'Extra Params';
+  (** A constant to define the INI section for the list of IWAD Exceptions, i.e. really PWAD. **)
+  strIWADExceptions = 'IWAD Exceptions';
 
 {$R *.dfm}
 
@@ -318,6 +325,7 @@ Begin
   FIWADExceptions := TStringList.Create;
   FIWADExceptions.Sorted := True;
   FIWADExceptions.CaseSensitive := False;
+  FIWADExceptions.Duplicates := dupIgnore;
   FIWADExceptions.Add(strHEXDDWAD);
   LoadVersionInfo;
   LoadSettings;
@@ -435,7 +443,7 @@ Procedure TfrmDLMainForm.LoadSettings;
 
 Var
   sl : TStringList;
-  strGameEngine: String;
+  strItem: String;
 
 Begin
   Top := FINIFile.ReadInteger(strPositionINISection, strTopINIKey, Top);
@@ -447,19 +455,19 @@ Begin
   sl := TStringList.Create;
   Try
     FINIFile.ReadSection(strGameEnginesINISection, sl);
-    For strGameEngine In sl Do
-      FGameEngines.AddPair(
-        strGameEngine,
-        FINIFile.ReadString(strGameEnginesINISection, strGameEngine, '')
-      );
-    FSelectedGameEngine := FINIFile.ReadString(strSetupINISection, strSelectGameEngineINIKey, '');
-    edtWADFolder.Text := FINIFile.ReadString(strSetupINISection, strWADFolderINIKey, '');
-    FSelectedIWAD := FINIFile.ReadString(strSetupINISection, strSelectedIWADINIKey, '');
-    FSelectedPWAD := FINIFile.ReadString(strSetupINISection, strSelectedPWADINIKey, '');
-    edtExtraParams.Text := FINIFile.ReadString(strSetupINISection, strExtraParamsINIKey, '');
+    For strItem In sl Do
+      FGameEngines.AddPair(strItem, FINIFile.ReadString(strGameEnginesINISection, strItem, ''));
+    FINIFile.ReadSection(strIWADExceptions, sl);
+    For strItem In sl Do
+      FIWADExceptions.Add(strItem);
   Finally
     sl.Free;
   End;
+  FSelectedGameEngine := FINIFile.ReadString(strSetupINISection, strSelectGameEngineINIKey, '');
+  edtWADFolder.Text := FINIFile.ReadString(strSetupINISection, strWADFolderINIKey, '');
+  FSelectedIWAD := FINIFile.ReadString(strSetupINISection, strSelectedIWADINIKey, '');
+  FSelectedPWAD := FINIFile.ReadString(strSetupINISection, strSelectedPWADINIKey, '');
+  edtExtraParams.Text := FINIFile.ReadString(strSetupINISection, strExtraParamsINIKey, '');
 End;
 
 (**
@@ -603,7 +611,7 @@ Const
 Begin
   lbxIWADs.Clear;
   lbxPWADs.Clear;
-  lbxPWADs.Items.Add(strNone);
+  lbxPWADs.Items.Add(strNone); //: @bug This is not checked for selection.
   RecurseWADFolders(edtWADFolder.Text);
 End;
 
@@ -673,7 +681,7 @@ End;
 Procedure TfrmDLMainForm.SaveSettings;
 
 Var
-  iGameEngine: Integer;
+  i: Integer;
 
 Begin
   FINIFile.WriteInteger(strPositionINISection, strTopINIKey, Top);
@@ -682,9 +690,11 @@ Begin
   FINIFile.WriteInteger(strPositionINISection, strHeightINIKey, Height);
   FINIFile.WriteInteger(strPositionINISection, strSplitterHeightINIKey, pnlGameEngines.Height);
   FINIFile.EraseSection(strGameEnginesINISection);
-  For iGameEngine := 0 To FGameEngines.Count - 1 Do
-    FINIFile.WriteString(strGameEnginesINISection, FGameEngines.Names[iGameEngine],
-      FGameEngines.ValueFromIndex[iGameEngine]);
+  For i := 0 To FGameEngines.Count - 1 Do
+    FINIFile.WriteString(strGameEnginesINISection, FGameEngines.Names[i], FGameEngines.ValueFromIndex[i]);
+  FINIFile.EraseSection(strIWADExceptions);
+  For i := 0 To FIWADExceptions.Count - 1 Do
+    FINIFile.WriteString(strIWADExceptions, FIWADExceptions[i], FIWADExceptions[i]);
   FINIFile.WriteString(strSetupINISection, strSelectGameEngineINIKey, FSelectedGameEngine);
   FINIFile.WriteString(strSetupINISection, strWADFolderINIKey, edtWADFolder.Text);
   FINIFile.WriteString(strSetupINISection, strSelectedIWADINIKey, FSelectedIWAD);
