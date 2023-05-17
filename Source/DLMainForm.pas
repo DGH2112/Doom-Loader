@@ -3,8 +3,12 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 5.985
+  @Version 6.073
   @Date    17 May 2023
+
+  @done    Change the selection implementation to use the hierarchy of the nodes.
+  @todo    Implement Hierarchical WAD files.
+  @todo    Remember IWAD associated with the selected PWAD.
   
 **)
 Unit DLMainForm;
@@ -85,6 +89,7 @@ Type
     Procedure RecurseWADFolders(Const strFolder : String);
     Procedure AddWADFileToList(Const TreeView : TTreeView; Const strFileName, SelectedWAD : String);
     Procedure LoadVersionInfo();
+    Function  TreePath(Const Node : TTreeNode) : String;
   Public
   End;
 
@@ -678,6 +683,34 @@ End;
 
 (**
 
+  This method returns the filename and parent folders for the selected node.
+
+  @precon  Node must be a valid instance.
+  @postcon Returns the filename and parent folders for the selected node.
+
+  @param   Node as a TTreeNode as a constant
+  @return  a String
+
+**)
+Function TfrmDLMainForm.TreePath(Const Node: TTreeNode): String;
+
+Var
+  N : TTreeNode;
+  
+Begin
+  Result := '';
+  N := Node;
+  While Assigned(N) Do
+    Begin
+      If Result.Length > 0 Then
+        Result := '\' + Result;
+      Result := N.Text + Result;
+      N := N.Parent;
+    End;
+End;
+
+(**
+
   This is an on click event handler for the IWAD list box.
 
   @precon  None.
@@ -689,7 +722,7 @@ End;
 Procedure TfrmDLMainForm.tvIWADsClick(Sender: TObject);
 
 Begin
-  FSelectedIWAD := tvIWADs.Selected.Text;
+  FSelectedIWAD := TreePath(tvIWADs.Selected);
   UpdateLaunchBtn;
 End;
 
@@ -706,7 +739,7 @@ End;
 Procedure TfrmDLMainForm.tvPWADsClick(Sender: TObject);
 
 Begin
-  FSelectedPWAD := tvPWADs.Selected.Text;
+  FSelectedPWAD := TreePath(tvPWADs.Selected);
   UpdateLaunchBtn;
 End;
 

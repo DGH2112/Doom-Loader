@@ -7,6 +7,7 @@ object frmDLMainForm: TfrmDLMainForm
   Color = clBtnFace
   Constraints.MinHeight = 480
   Constraints.MinWidth = 640
+  DoubleBuffered = True
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
   Font.Height = -13
