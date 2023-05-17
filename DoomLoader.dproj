@@ -101,6 +101,9 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
+        <RcCompile Include="DoomLoaderITHVerInfo.RC">
+            <Form>DoomLoaderITHVerInfo.res</Form>
+        </RcCompile>
         <DCCReference Include="Source\DLMainForm.pas">
             <Form>frmDLMainForm</Form>
             <FormType>dfm</FormType>

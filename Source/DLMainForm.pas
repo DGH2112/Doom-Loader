@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 5.508
+  @Version 5.734
   @Date    17 May 2023
   
 **)
@@ -84,6 +84,7 @@ Type
     Function  IsIWAD(Const strFileName : String) : Boolean;
     Procedure RecurseWADFolders(Const strFolder : String);
     Procedure AddWADFileToList(Const ListBox : TListBox; Const strFileName, SelectedWAD : String);
+    Procedure LoadVersionInfo();
   Public
   End;
 
@@ -318,6 +319,7 @@ Begin
   FIWADExceptions.Sorted := True;
   FIWADExceptions.CaseSensitive := False;
   FIWADExceptions.Add(strHEXDDWAD);
+  LoadVersionInfo;
   LoadSettings;
   PopulateGameEngines;
   PopulateIWADs;
@@ -458,6 +460,80 @@ Begin
   Finally
     sl.Free;
   End;
+End;
+
+(**
+
+  This method loads the applications build information from the resources.
+
+  @precon  None.
+  @postcon The build information is loaded and reflected in the application title and main form caption.
+
+**)
+Procedure TfrmDLMainForm.LoadVersionInfo;
+
+Type
+  TBuildInfo = Record
+    FMajor  : Integer;
+    FMinor  : Integer;
+    FBugFix :Integer;
+    FBuild  : Integer;
+  End;
+
+Const
+  strBugFix = ' abcdefghijklmnopqrstuvwxyz';
+  iShiftRigh = 16;
+  iWordMask = $FFFF;
+  {$IFDEF DEBUG}
+  {$IFDEF WIN32}
+  strBitness = '32-Bit ';
+  {$ELSE WIN32}
+  strBitness = '64-Bit ';
+  {$ENDIF WIN32}
+  {$ENDIF DEBUG}
+
+ResourceString
+  {$IFDEF DEBUG}
+  strBuild = ' %d.%d%s BETA ' + strBitness + '(DEBUG Build %d.%d.%d.%d)';
+  {$ELSE}
+  strBuild = ' %d.%d%s';
+  {$ENDIF DEBUG}
+
+Var
+  VerInfoSize: DWORD;
+  VerInfo: Pointer;
+  VerValueSize: DWORD;
+  VerValue: PVSFixedFileInfo;
+  Dummy: DWORD;
+  BuildInfo : TBuildInfo;
+  
+Begin
+  BuildInfo.FMajor := 0;
+  BuildInfo.FMinor := 0;
+  BuildInfo.FBugFix := 0;
+  BuildInfo.FBuild := 0;
+  VerInfoSize := GetFileVersionInfoSize(PChar(ParamStr(0)), Dummy);
+  If VerInfoSize <> 0 Then
+    Begin
+      GetMem(VerInfo, VerInfoSize);
+      GetFileVersionInfo(PChar(ParamStr(0)), 0, VerInfoSize, VerInfo);
+      VerQueryValue(VerInfo, '\', Pointer(VerValue), VerValueSize);
+      BuildInfo.FMajor := VerValue^.dwFileVersionMS Shr iShiftRigh;
+      BuildInfo.FMinor := VerValue^.dwFileVersionMS And iWordMask;
+      BuildInfo.FBugfix := VerValue^.dwFileVersionLS Shr iShiftRigh;
+      BuildInfo.FBuild := VerValue^.dwFileVersionLS And iWordMask;
+      FreeMem(VerInfo, VerInfoSize);
+    End;
+  Application.Title := Application.Title + Format(strBuild, [
+    BuildInfo.FMajor,
+    BuildInfo.FMinor,
+    strBugFix[Succ(BuildInfo.FBugFix)],
+    BuildInfo.FMajor,
+    BuildInfo.FMinor,
+    BuildInfo.FBugFix,
+    BuildInfo.FBuild
+  ]);
+  Caption := Application.Title;
 End;
 
 (**
