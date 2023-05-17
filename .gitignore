@@ -1,0 +1,8 @@
+﻿Source/__history/
+__history/
+*.exe
+*.~dsk
+*.dcu
+*.local
+*.dsk
+*.identcache
