@@ -3,13 +3,13 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 10.932
+  @Version 11.044
   @Date    19 May 2023
 
   @done    Change the selection implementation to use the hierarchy of the nodes.
   @done    Implement Hierarchical WAD files.
   @done    Remember IWAD associated with the selected PWAD.
-  @todo    Make the extra options be remembered in a combo box so they can be recalled.
+  @done    Make the extra options be remembered in a combo box so they can be recalled.
   @todo    Remember extra options per IWAD so different games can have different extra options.
   
 **)
@@ -57,10 +57,10 @@ Type
     dlgOpen: TOpenDialog;
     Splitter: TSplitter;
     pnlWADs: TPanel;
-    edtExtraParams: TEdit;
     lblParams: TLabel;
     tvIWADs: TTreeView;
     tvPWADs: TTreeView;
+    cbxExtraParams: TComboBox;
     procedure btnAddClick(Sender: TObject);
     procedure btnBrowseClick(Sender: TObject);
     procedure btnDeleteClick(Sender: TObject);
@@ -140,6 +140,8 @@ Const
   strIWADExceptions = 'IWAD Exceptions';
   (** A constant to define the INI section for the list of IWAD associated with a PWAD. **)
   strAsscoiatedIWADs = 'Associated IWADs';
+  (** A constant to define the INI section for the list of Extra Options. **)
+  strExtraOptionsINISection = 'Extra Options';
 
 {$R *.dfm}
 
@@ -295,8 +297,14 @@ Const
   strPWADCmd = '-file "%s"';
 
 Begin
+  // Save Associated IWAD
   If Assigned(tvPWADs.Selected) Then
     FAssociatedIWAD.Values[TreePath(tvPWADs.Selected)] := FSelectedIWAD;
+  // Save Extra Options to the dropdown list
+  If Length(cbxExtraParams.Text) > 0 Then
+    If cbxExtraParams.Items.IndexOf(cbxExtraParams.Text) = -1 Then
+      cbxExtraParams.Items.Add(cbxExtraParams.Text);
+  // Launch the game engine with IWAD and optional PWAD
   ShellExecute(
     Handle,
     PChar(strOpenVerb),
@@ -307,7 +315,7 @@ Begin
     PChar(
       Format(strIWADCmd, [edtWADFolder.Text + '\' + FSelectedIWAD]) +
       IfThen(tvPWADs.SelectionCount > 0, Format(#32 + strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]), '') +
-      IfThen(Length(edtExtraParams.Text) > 0, #32 + edtExtraParams.Text, '')
+      IfThen(Length(cbxExtraParams.Text) > 0, #32 + cbxExtraParams.Text, '')
     ), // Parameter
     PChar(
       FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]
@@ -497,6 +505,9 @@ Begin
     FINIFile.ReadSection(strAsscoiatedIWADs, sl);
     For strItem In sl Do
       FAssociatedIWAD.AddPair(strItem, FINIFile.ReadString(strAsscoiatedIWADs, strItem, ''));
+    FINIFile.ReadSection(strExtraOptionsINISection, sl);
+    For strItem In sl Do
+      cbxExtraParams.Items.Add(FINIFile.ReadString(strExtraOptionsINISection, strItem, ''));
   Finally
     sl.Free;
   End;
@@ -504,7 +515,7 @@ Begin
   edtWADFolder.Text := FINIFile.ReadString(strSetupINISection, strWADFolderINIKey, '');
   FSelectedIWAD := FINIFile.ReadString(strSetupINISection, strSelectedIWADINIKey, '');
   FSelectedPWAD := FINIFile.ReadString(strSetupINISection, strSelectedPWADINIKey, '');
-  edtExtraParams.Text := FINIFile.ReadString(strSetupINISection, strExtraParamsINIKey, '');
+  cbxExtraParams.Text := FINIFile.ReadString(strSetupINISection, strExtraParamsINIKey, '');
 End;
 
 (**
@@ -721,6 +732,9 @@ End;
 **)
 Procedure TfrmDLMainForm.SaveSettings;
 
+Const
+  strItem = 'Item%4.4d';
+
 Var
   i: Integer;
 
@@ -740,10 +754,13 @@ Begin
   FINIFile.WriteString(strSetupINISection, strWADFolderINIKey, edtWADFolder.Text);
   FINIFile.WriteString(strSetupINISection, strSelectedIWADINIKey, FSelectedIWAD);
   FINIFile.WriteString(strSetupINISection, strSelectedPWADINIKey, FSelectedPWAD);
-  FINIFile.WriteString(strSetupINISection, strExtraParamsINIKey, edtExtraParams.Text);
+  FINIFile.WriteString(strSetupINISection, strExtraParamsINIKey, cbxExtraParams.Text);
   FINIFile.EraseSection(strAsscoiatedIWADs);
   For i := 0 To FAssociatedIWAD.Count - 1 Do
     FINIFile.WriteString(strAsscoiatedIWADs, FAssociatedIWAD.Names[i], FAssociatedIWAD.ValueFromIndex[i]);
+  FINIFile.EraseSection(strExtraOptionsINISection);
+  For i := 0 To cbxExtraParams.Items.Count - 1 Do
+    FINIFile.WriteString(strExtraOptionsINISection, Format(strItem, [i]), cbxExtraParams.Items[i]);
   If FINIFile.Modified Then
     FINIFile.UpdateFile;
 End;

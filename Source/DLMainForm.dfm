@@ -183,7 +183,7 @@ object frmDLMainForm: TfrmDLMainForm
       Width = 43
       Height = 16
       Caption = '&Params'
-      FocusControl = edtExtraParams
+      FocusControl = cbxExtraParams
     end
     object btnLaunch: TBitBtn
       Left = 536
@@ -198,14 +198,13 @@ object frmDLMainForm: TfrmDLMainForm
       OnClick = btnLaunchClick
       ExplicitLeft = 532
     end
-    object edtExtraParams: TEdit
+    object cbxExtraParams: TComboBox
       Left = 64
       Top = 6
       Width = 466
       Height = 24
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 0
-      ExplicitWidth = 462
     end
   end
   object pnlWADs: TPanel
@@ -304,6 +303,8 @@ object frmDLMainForm: TfrmDLMainForm
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 0
+        ExplicitWidth = 312
+        ExplicitHeight = 172
         object lblIWADs: TLabel
           AlignWithMargins = True
           Left = 3
@@ -330,6 +331,8 @@ object frmDLMainForm: TfrmDLMainForm
           RowSelect = True
           TabOrder = 0
           OnClick = tvIWADsClick
+          ExplicitWidth = 306
+          ExplicitHeight = 144
         end
       end
       object pnlPWADs: TPanel
@@ -341,6 +344,9 @@ object frmDLMainForm: TfrmDLMainForm
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 1
+        ExplicitLeft = 312
+        ExplicitWidth = 312
+        ExplicitHeight = 172
         object lblPWADs: TLabel
           AlignWithMargins = True
           Left = 3
@@ -367,6 +373,8 @@ object frmDLMainForm: TfrmDLMainForm
           RowSelect = True
           TabOrder = 0
           OnClick = tvPWADsClick
+          ExplicitWidth = 306
+          ExplicitHeight = 144
         end
       end
     end
