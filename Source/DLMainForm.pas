@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 11.044
+  @Version 11.774
   @Date    19 May 2023
 
   @done    Change the selection implementation to use the hierarchy of the nodes.
@@ -104,8 +104,12 @@ Var
 Implementation
 
 uses
+  {$IFDEF DEBUG}
+  CodeSiteLogging,
+  {$ENDIF DEBUG}
   System.IOUtils,
   System.StrUtils,
+  System.UITypes,
   Winapi.ShellAPI,
   Vcl.FileCtrl;
 
@@ -284,18 +288,31 @@ End;
   @precon  None.
   @postcon Asks the shell to load the game engine with the selected WAD files.
 
-  @todo    Change the below to use CreateProcess().
+  @done    Change the below to use CreateProcess().
+
+  @nocheck EmptyWhile
 
   @param   Sender as a TObject
 
 **)
 Procedure TfrmDLMainForm.btnLaunchClick(Sender: TObject);
 
+ResourceString
+  strExitCodeMsg = 'The process "%s" exited with error code %d';
+
 Const
-  strOpenVerb = 'open';
   strIWADCmd = '-iwad "%s"';
   strPWADCmd = '-file "%s"';
+  iWaitInMilliSec = 100;
 
+Var
+  strGameEngine : String;
+  strParams :String;
+  strFolder : String;
+  StartupInfo : TStartupInfo;
+  ProcessInfo : TProcessInformation;
+  iExitCode : Cardinal;
+ 
 Begin
   // Save Associated IWAD
   If Assigned(tvPWADs.Selected) Then
@@ -305,23 +322,30 @@ Begin
     If cbxExtraParams.Items.IndexOf(cbxExtraParams.Text) = -1 Then
       cbxExtraParams.Items.Add(cbxExtraParams.Text);
   // Launch the game engine with IWAD and optional PWAD
-  ShellExecute(
-    Handle,
-    PChar(strOpenVerb),
-    PChar
-      ('"' + FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex] +
-      FGameEngines.Names[lvGameEngines.ItemIndex] + '"'
-    ), // Game Engine
-    PChar(
-      Format(strIWADCmd, [edtWADFolder.Text + '\' + FSelectedIWAD]) +
-      IfThen(tvPWADs.SelectionCount > 0, Format(#32 + strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]), '') +
-      IfThen(Length(cbxExtraParams.Text) > 0, #32 + cbxExtraParams.Text, '')
-    ), // Parameter
-    PChar(
-      FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]
-    ), // Directory
-    SW_NORMAL
-  );
+  strGameEngine := '"' + FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex] +
+    FGameEngines.Names[lvGameEngines.ItemIndex] + '"';
+  strParams := Format(strIWADCmd, [edtWADFolder.Text + '\' + FSelectedIWAD]) +
+    IfThen(tvPWADs.SelectionCount > 0, Format(#32 + strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]), '') +
+    IfThen(Length(cbxExtraParams.Text) > 0, #32 + cbxExtraParams.Text, '');
+  strFolder := FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex];
+  FillChar(StartupInfo, SizeOf(TStartupInfo), 0);
+  StartupInfo.cb := SizeOf(TStartupInfo);
+  StartupInfo.dwFlags     := STARTF_USESHOWWINDOW or STARTF_USESTDHANDLES;
+  StartupInfo.wShowWindow := SW_NORMAL;
+  StartupInfo.hStdOutput  := 0;
+  StartupInfo.hStdError   := 0;
+  Win32Check(CreateProcess(Nil, PChar(strGameEngine + #32 + strParams), Nil, Nil, False, 0, Nil,
+    PChar(strFolder), StartupInfo, ProcessInfo));
+  Try
+    While WaitforSingleObject(ProcessInfo.hProcess, iWaitInMilliSec) = WAIT_TIMEOUT Do;
+    If GetExitCodeProcess(ProcessInfo.hProcess, iExitCode) Then
+      If iExitCode > 0 Then
+        TaskMessageDlg(Application.Title, Format(strExitCodeMsg, [strGameEngine, iExitCode]), mtError,
+          [mbOK], 0);
+  Finally
+    Win32Check(CloseHandle(ProcessInfo.hThread));
+    Win32Check(CloseHandle(ProcessInfo.hProcess));
+  End;
 End;
 
 (**
