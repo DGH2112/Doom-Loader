@@ -3,12 +3,12 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 10.710
-  @Date    17 May 2023
+  @Version 10.932
+  @Date    19 May 2023
 
   @done    Change the selection implementation to use the hierarchy of the nodes.
   @done    Implement Hierarchical WAD files.
-  @todo    Remember IWAD associated with the selected PWAD.
+  @done    Remember IWAD associated with the selected PWAD.
   @todo    Make the extra options be remembered in a combo box so they can be recalled.
   @todo    Remember extra options per IWAD so different games can have different extra options.
   
@@ -71,8 +71,7 @@ Type
     Procedure FormCreate(Sender: TObject);
     procedure tvIWADsClick(Sender: TObject);
     procedure tvPWADsClick(Sender: TObject);
-    procedure lvGameEnginesSelectItem(Sender: TObject; Item: TListItem; Selected:
-        Boolean);
+    procedure lvGameEnginesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
   Strict Private
     FINIFileName        : String;
     FINIFile            : TMemINIFile;
@@ -81,6 +80,7 @@ Type
     FSelectedIWAD       : String;
     FSelectedPWAD       : String;
     FIWADExceptions     : TStringList;
+    FAssociatedIWAD     : TStringList;
   Strict Protected
     Procedure LoadSettings;
     Procedure SaveSettings;
@@ -138,6 +138,8 @@ Const
   strExtraParamsINIKey = 'Extra Params';
   (** A constant to define the INI section for the list of IWAD Exceptions, i.e. really PWAD. **)
   strIWADExceptions = 'IWAD Exceptions';
+  (** A constant to define the INI section for the list of IWAD associated with a PWAD. **)
+  strAsscoiatedIWADs = 'Associated IWADs';
 
 {$R *.dfm}
 
@@ -293,6 +295,8 @@ Const
   strPWADCmd = '-file "%s"';
 
 Begin
+  If Assigned(tvPWADs.Selected) Then
+    FAssociatedIWAD.Values[TreePath(tvPWADs.Selected)] := FSelectedIWAD;
   ShellExecute(
     Handle,
     PChar(strOpenVerb),
@@ -389,6 +393,7 @@ Begin
   FIWADExceptions.CaseSensitive := False;
   FIWADExceptions.Duplicates := dupIgnore;
   FIWADExceptions.Add(strHEXDDWAD);
+  FAssociatedIWAD := TStringList.Create;
   LoadVersionInfo;
   LoadSettings;
   PopulateGameEngines;
@@ -410,6 +415,7 @@ Procedure TfrmDLMainForm.FormDestroy(Sender: TObject);
 
 Begin
   SaveSettings;
+  FAssociatedIWAD.Free;
   FIWADExceptions.Free;
   FGameEngines.Free;
   FINIFile.Free;
@@ -488,6 +494,9 @@ Begin
     FINIFile.ReadSection(strIWADExceptions, sl);
     For strItem In sl Do
       FIWADExceptions.Add(strItem);
+    FINIFile.ReadSection(strAsscoiatedIWADs, sl);
+    For strItem In sl Do
+      FAssociatedIWAD.AddPair(strItem, FINIFile.ReadString(strAsscoiatedIWADs, strItem, ''));
   Finally
     sl.Free;
   End;
@@ -732,6 +741,9 @@ Begin
   FINIFile.WriteString(strSetupINISection, strSelectedIWADINIKey, FSelectedIWAD);
   FINIFile.WriteString(strSetupINISection, strSelectedPWADINIKey, FSelectedPWAD);
   FINIFile.WriteString(strSetupINISection, strExtraParamsINIKey, edtExtraParams.Text);
+  FINIFile.EraseSection(strAsscoiatedIWADs);
+  For i := 0 To FAssociatedIWAD.Count - 1 Do
+    FINIFile.WriteString(strAsscoiatedIWADs, FAssociatedIWAD.Names[i], FAssociatedIWAD.ValueFromIndex[i]);
   If FINIFile.Modified Then
     FINIFile.UpdateFile;
 End;
@@ -793,8 +805,27 @@ End;
 **)
 Procedure TfrmDLMainForm.tvPWADsClick(Sender: TObject);
 
+Var
+  astrFileName: TArray<String>;
+  iPath: Integer;
+  Node: TTreeNode;
+  ParentNode: TTreeNode;
+  strIWAD: String;
+  
 Begin
   FSelectedPWAD := TreePath(tvPWADs.Selected);
+  // Update associated IWAD
+  strIWAD := FAssociatedIWAD.Values[FSelectedPWAD];
+  astrFileName := strIWAD.Split(['\']);
+  ParentNode := Nil;
+  For iPath := 0 To High(astrFileName) Do
+    Begin
+      Node := Find(tvIWADs, ParentNode, astrFileName[iPath]);
+      If Assigned(Node) Then
+        ParentNode := Node;
+    End;
+  If Assigned(ParentNode) Then
+    ParentNode.Selected := True;
   UpdateLaunchBtn;
 End;
 
