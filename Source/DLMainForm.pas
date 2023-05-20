@@ -3,15 +3,9 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 11.940
+  @Version 12.016
   @Date    20 May 2023
 
-  @done    Change the selection implementation to use the hierarchy of the nodes.
-  @done    Implement Hierarchical WAD files.
-  @done    Remember IWAD associated with the selected PWAD.
-  @done    Make the extra options be remembered in a combo box so they can be recalled.
-  @done    Remember extra options per IWAD so different games can have different extra options.
-  
 **)
 Unit DLMainForm;
 
@@ -203,13 +197,13 @@ End;
 **)
 Procedure TfrmDLMainForm.btnAddClick(Sender: TObject);
 
+Const
+  strItem = 'Item%4.4d';
+
 Begin
   If dlgOpen.Execute Then
     Begin
-      FGameEngines.AddPair(
-        ExtractFileName(dlgOpen.FileName),
-        ExtractFilePath(dlgOpen.FileName)
-      );
+      FGameEngines.AddPair(Format(strItem, [FGameEngines.Count]), dlgOpen.FileName);
       FSelectedGameEngine := ExtractFileName(dlgOpen.FileName);
       PopulateGameEngines;
       UpdateLaunchBtn;
@@ -272,12 +266,11 @@ Procedure TfrmDLMainForm.btnEditClick(Sender: TObject);
 Begin
   If lvGameEngines.ItemIndex = -1 Then
     Exit;
-  dlgOpen.InitialDir := FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex];
-  dlgOpen.FileName := FGameEngines.Names[lvGameEngines.ItemIndex];
+  dlgOpen.InitialDir := ExtractFilePath(FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]);
+  dlgOpen.FileName := ExtractFileName(FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]);
   If dlgOpen.Execute Then
     Begin
-      FGameEngines[lvGameEngines.ItemIndex] :=
-        ExtractFileName(dlgOpen.FileName) + '=' + ExtractFilePath(dlgOpen.FileName);
+      FGameEngines[lvGameEngines.ItemIndex] := dlgOpen.FileName;
       FSelectedGameEngine := ExtractFileName(dlgOpen.FileName);
       PopulateGameEngines;
       UpdateLaunchBtn;
@@ -290,8 +283,6 @@ End;
 
   @precon  None.
   @postcon Asks the shell to load the game engine with the selected WAD files.
-
-  @done    Change the below to use CreateProcess().
 
   @nocheck EmptyWhile
 
@@ -329,12 +320,11 @@ Begin
       FAssociatedOptions.Values[FSelectedIWAD] := cbxExtraParams.Text;
     End;
   // Launch the game engine with IWAD and optional PWAD
-  strGameEngine := '"' + FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex] +
-    FGameEngines.Names[lvGameEngines.ItemIndex] + '"';
+  strGameEngine := '"' + FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex] + '"';
   strParams := Format(strIWADCmd, [edtWADFolder.Text + '\' + FSelectedIWAD]) +
     IfThen(tvPWADs.SelectionCount > 0, Format(#32 + strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]), '') +
     IfThen(Length(cbxExtraParams.Text) > 0, #32 + cbxExtraParams.Text, '');
-  strFolder := FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex];
+  strFolder := ExtractFilePath(FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]);
   FillChar(StartupInfo, SizeOf(TStartupInfo), 0);
   StartupInfo.cb := SizeOf(TStartupInfo);
   StartupInfo.dwFlags     := STARTF_USESHOWWINDOW or STARTF_USESTDHANDLES;
@@ -669,8 +659,8 @@ Begin
     For iGameEngine := 0 To FGameEngines.Count - 1 Do
       Begin
         Item := lvGameEngines.Items.Add;
-        Item.Caption := FGameEngines.Names[iGameEngine];
-        Item.SubItems.Add(FGameEngines.ValueFromIndex[iGameEngine]);
+        Item.Caption := ExtractFileName(FGameEngines.ValueFromIndex[iGameEngine]);
+        Item.SubItems.Add(ExtractFilePath(FGameEngines.ValueFromIndex[iGameEngine]));
         If CompareText(FSelectedGameEngine, Item.Caption) = 0 Then
           Item.Selected := True;
       End;
@@ -782,7 +772,7 @@ Begin
   FINIFile.WriteInteger(strPositionINISection, strSplitterHeightINIKey, pnlGameEngines.Height);
   FINIFile.EraseSection(strGameEnginesINISection);
   For i := 0 To FGameEngines.Count - 1 Do
-    FINIFile.WriteString(strGameEnginesINISection, FGameEngines.Names[i], FGameEngines.ValueFromIndex[i]);
+    FINIFile.WriteString(strGameEnginesINISection, Format(strItem, [i]), FGameEngines.ValueFromIndex[i]);
   FINIFile.EraseSection(strIWADExceptions);
   For i := 0 To FIWADExceptions.Count - 1 Do
     FINIFile.WriteString(strIWADExceptions, FIWADExceptions[i], FIWADExceptions[i]);
