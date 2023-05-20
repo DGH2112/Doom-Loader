@@ -3,14 +3,14 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 11.774
-  @Date    19 May 2023
+  @Version 11.940
+  @Date    20 May 2023
 
   @done    Change the selection implementation to use the hierarchy of the nodes.
   @done    Implement Hierarchical WAD files.
   @done    Remember IWAD associated with the selected PWAD.
   @done    Make the extra options be remembered in a combo box so they can be recalled.
-  @todo    Remember extra options per IWAD so different games can have different extra options.
+  @done    Remember extra options per IWAD so different games can have different extra options.
   
 **)
 Unit DLMainForm;
@@ -81,6 +81,7 @@ Type
     FSelectedPWAD       : String;
     FIWADExceptions     : TStringList;
     FAssociatedIWAD     : TStringList;
+    FAssociatedOptions  : TStringList;
   Strict Protected
     Procedure LoadSettings;
     Procedure SaveSettings;
@@ -146,6 +147,8 @@ Const
   strAsscoiatedIWADs = 'Associated IWADs';
   (** A constant to define the INI section for the list of Extra Options. **)
   strExtraOptionsINISection = 'Extra Options';
+  (** A constant to define the INI section for the list of Associated Options. **)
+  strAssociatedOptionsINISection = 'Associated Options';
 
 {$R *.dfm}
 
@@ -319,8 +322,12 @@ Begin
     FAssociatedIWAD.Values[TreePath(tvPWADs.Selected)] := FSelectedIWAD;
   // Save Extra Options to the dropdown list
   If Length(cbxExtraParams.Text) > 0 Then
-    If cbxExtraParams.Items.IndexOf(cbxExtraParams.Text) = -1 Then
-      cbxExtraParams.Items.Add(cbxExtraParams.Text);
+    Begin
+      If cbxExtraParams.Items.IndexOf(cbxExtraParams.Text) = -1 Then
+        cbxExtraParams.Items.Add(cbxExtraParams.Text);
+      //: @note Might want to have this configurable, i.e. IWAD, PWAD or Game Engine.
+      FAssociatedOptions.Values[FSelectedIWAD] := cbxExtraParams.Text;
+    End;
   // Launch the game engine with IWAD and optional PWAD
   strGameEngine := '"' + FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex] +
     FGameEngines.Names[lvGameEngines.ItemIndex] + '"';
@@ -426,6 +433,7 @@ Begin
   FIWADExceptions.Duplicates := dupIgnore;
   FIWADExceptions.Add(strHEXDDWAD);
   FAssociatedIWAD := TStringList.Create;
+  FAssociatedOptions := TStringList.Create;
   LoadVersionInfo;
   LoadSettings;
   PopulateGameEngines;
@@ -447,6 +455,7 @@ Procedure TfrmDLMainForm.FormDestroy(Sender: TObject);
 
 Begin
   SaveSettings;
+  FAssociatedOptions.Free;
   FAssociatedIWAD.Free;
   FIWADExceptions.Free;
   FGameEngines.Free;
@@ -532,6 +541,9 @@ Begin
     FINIFile.ReadSection(strExtraOptionsINISection, sl);
     For strItem In sl Do
       cbxExtraParams.Items.Add(FINIFile.ReadString(strExtraOptionsINISection, strItem, ''));
+    FINIFile.ReadSection(strAssociatedOptionsINISection, sl);
+    For strItem In sl Do
+      FAssociatedOptions.AddPair(strItem, FINIFile.ReadString(strAssociatedOptionsINISection, strItem, ''));
   Finally
     sl.Free;
   End;
@@ -785,6 +797,10 @@ Begin
   FINIFile.EraseSection(strExtraOptionsINISection);
   For i := 0 To cbxExtraParams.Items.Count - 1 Do
     FINIFile.WriteString(strExtraOptionsINISection, Format(strItem, [i]), cbxExtraParams.Items[i]);
+  FINIFile.EraseSection(strAssociatedOptionsINISection);
+  For i := 0 To FAssociatedOptions.Count - 1 Do
+    FINIFile.WriteString(strAssociatedOptionsINISection, FAssociatedOptions.Names[i],
+      FAssociatedOptions.ValueFromIndex[i]);
   If FINIFile.Modified Then
     FINIFile.UpdateFile;
 End;
@@ -831,6 +847,9 @@ Procedure TfrmDLMainForm.tvIWADsClick(Sender: TObject);
 
 Begin
   FSelectedIWAD := TreePath(tvIWADs.Selected);
+  // Update Extra Options
+  cbxExtraParams.Text := FAssociatedOptions.Values[FSelectedIWAD];
+  // Update Launch button
   UpdateLaunchBtn;
 End;
 
@@ -867,6 +886,7 @@ Begin
     End;
   If Assigned(ParentNode) Then
     ParentNode.Selected := True;
+  // Update Launch button
   UpdateLaunchBtn;
 End;
 
