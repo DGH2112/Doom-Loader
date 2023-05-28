@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 12.313
+  @Version 12.456
   @Date    28 May 2023
 
   @license
@@ -78,11 +78,15 @@ Type
     pnlText: TPanel;
     lblWADText: TLabel;
     mmoWADText: TMemo;
+    btnUp: TBitBtn;
+    btnDown: TBitBtn;
     procedure btnAddClick(Sender: TObject);
     procedure btnBrowseClick(Sender: TObject);
     procedure btnDeleteClick(Sender: TObject);
+    procedure btnDownClick(Sender: TObject);
     procedure btnEditClick(Sender: TObject);
     procedure btnLaunchClick(Sender: TObject);
+    procedure btnUpClick(Sender: TObject);
     procedure edtWADFolderChange(Sender: TObject);
     Procedure FormDestroy(Sender: TObject);
     Procedure FormCreate(Sender: TObject);
@@ -113,6 +117,7 @@ Type
     Function  Find(Const TreeView : TTreeView; Const Node : TTreeNode;
       Const strFileNamePart : String) : TTreeNode;
     Procedure LoadWADText(Const strWADFileName  :String);
+    Procedure UpdateUpAndDownBtns();
   Public
   End;
 
@@ -279,6 +284,23 @@ End;
 
 (**
 
+  This is an on click event handler for the Down button.
+
+  @precon  None.
+  @postcon Move the selected game engine down the list.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.btnDownClick(Sender: TObject);
+
+Begin
+  FGameEngines.Exchange(lvGameEngines.ItemIndex, lvGameEngines.ItemIndex + 1);
+  PopulateGameEngines;
+End;
+
+(**
+
   This is an on click event handler for the Edit button.
 
   @precon  None.
@@ -376,6 +398,23 @@ Begin
     Win32Check(CloseHandle(ProcessInfo.hThread));
     Win32Check(CloseHandle(ProcessInfo.hProcess));
   End;
+End;
+
+(**
+
+  This is an on click event handler for the Up button.
+
+  @precon  None.
+  @postcon Moves the selected game engine up the list.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.btnUpClick(Sender: TObject);
+
+Begin
+  FGameEngines.Exchange(lvGameEngines.ItemIndex, lvGameEngines.ItemIndex - 1);
+  PopulateGameEngines;
 End;
 
 (**
@@ -700,6 +739,7 @@ Procedure TfrmDLMainForm.lvGameEnginesSelectItem(Sender: TObject; Item: TListIte
 
 Begin
   FSelectedGameEngine := Item.Caption;
+  UpdateUpAndDownBtns;
   UpdateLaunchBtn;
 End;
 
@@ -961,6 +1001,21 @@ Begin
     (lvGameEngines.SelCount = 1) And
     (tvIWADs.SelectionCount > 0) And
     (tvPWADs.SelectionCount > 0);
+End;
+
+(**
+
+  This method enables/disables the up and down buttons depending upon which game engine is selected.
+
+  @precon  None.
+  @postcon The up and down buttons are enabled or disabled according to which game engine is selected.
+
+**)
+Procedure TfrmDLMainForm.UpdateUpAndDownBtns;
+
+Begin
+  btnUp.Enabled := lvGameEngines.ItemIndex > 0;
+  btnDown.Enabled := lvGameEngines.ItemIndex < lvGameEngines.Items.Count - 1;
 End;
 
 End.

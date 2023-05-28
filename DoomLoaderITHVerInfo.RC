@@ -1,8 +1,8 @@
 LANGUAGE LANG_ENGLISH,SUBLANG_ENGLISH_US
 
 1 VERSIONINFO LOADONCALL MOVEABLE DISCARDABLE IMPURE
-FILEVERSION 1, 0, 0, 100
-PRODUCTVERSION 1, 0, 0, 100
+FILEVERSION 1, 0, 0, 104
+PRODUCTVERSION 1, 0, 0, 104
 FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
 FILEOS VOS__WINDOWS32
 FILETYPE VFT_APP
@@ -13,7 +13,7 @@ FILETYPE VFT_APP
     {
       VALUE "CompanyName", "David Hoyle\000"
       VALUE "FileDescription", "DOOM Loader: A simple application to allow you to select various gaming engines to launch different IWAD and PADs.\000"
-      VALUE "FileVersion", "1.0.0.100\000"
+      VALUE "FileVersion", "1.0.0.104\000"
       VALUE "InternalName", "DOOMLoader\000"
       VALUE "LegalCopyright", "David Hoyle\000"
       VALUE "LegalTrademarks", "David Hoyle\000"

@@ -30,13 +30,13 @@ object frmDLMainForm: TfrmDLMainForm
   object Splitter: TSplitter
     AlignWithMargins = True
     Left = 3
-    Top = 180
+    Top = 185
     Width = 622
     Height = 5
     Cursor = crVSplit
     Align = alTop
     AutoSnap = False
-    MinSize = 100
+    MinSize = 160
     ResizeStyle = rsUpdate
     ExplicitLeft = 0
     ExplicitTop = 177
@@ -46,17 +46,16 @@ object frmDLMainForm: TfrmDLMainForm
     Left = 0
     Top = 22
     Width = 628
-    Height = 155
+    Height = 160
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
-    ExplicitWidth = 624
     object lvGameEngines: TListView
       AlignWithMargins = True
       Left = 3
       Top = 3
       Width = 531
-      Height = 149
+      Height = 154
       Align = alClient
       Columns = <
         item
@@ -72,17 +71,17 @@ object frmDLMainForm: TfrmDLMainForm
       TabOrder = 0
       ViewStyle = vsReport
       OnSelectItem = lvGameEnginesSelectItem
-      ExplicitWidth = 527
+      ExplicitHeight = 149
     end
     object pnlGameEngineBtns: TPanel
       Left = 537
       Top = 0
       Width = 91
-      Height = 155
+      Height = 160
       Align = alRight
       BevelOuter = bvNone
       TabOrder = 1
-      ExplicitLeft = 533
+      ExplicitHeight = 155
       object btnAdd: TBitBtn
         AlignWithMargins = True
         Left = 3
@@ -161,6 +160,50 @@ object frmDLMainForm: TfrmDLMainForm
         TabOrder = 2
         OnClick = btnDeleteClick
       end
+      object btnUp: TBitBtn
+        AlignWithMargins = True
+        Left = 3
+        Top = 96
+        Width = 85
+        Height = 25
+        Align = alTop
+        Caption = '&Up'
+        Glyph.Data = {
+          F6000000424DF600000000000000760000002800000010000000100000000100
+          04000000000080000000120B0000120B00001000000010000000000000000000
+          800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+          FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333000333
+          33333333330C033333333333330C033333333333330C033333333333330C0333
+          33333333330C033333333330000C000033333330CCCCCCC0333333330CCCCC03
+          333333330CCCCC033333333330CCC0333333333330CCC03333333333330C0333
+          33333333330C0333333333333330333333333333333033333333}
+        ParentDoubleBuffered = True
+        TabOrder = 3
+        OnClick = btnUpClick
+        ExplicitTop = 127
+      end
+      object btnDown: TBitBtn
+        AlignWithMargins = True
+        Left = 3
+        Top = 127
+        Width = 85
+        Height = 25
+        Align = alTop
+        Caption = 'D&own'
+        Glyph.Data = {
+          F6000000424DF600000000000000760000002800000010000000100000000100
+          04000000000080000000120B0000120B00001000000010000000000000000000
+          800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+          FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333303333
+          333333333330333333333333330C033333333333330C03333333333330CCC033
+          3333333330CCC033333333330CCCCC03333333330CCCCC0333333330CCCCCCC0
+          33333330000C000033333333330C033333333333330C033333333333330C0333
+          33333333330C033333333333330C033333333333330003333333}
+        ParentDoubleBuffered = True
+        TabOrder = 4
+        OnClick = btnDownClick
+        ExplicitTop = 135
+      end
     end
   end
   object pnlOptions: TPanel
@@ -171,8 +214,6 @@ object frmDLMainForm: TfrmDLMainForm
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 2
-    ExplicitTop = 400
-    ExplicitWidth = 624
     DesignSize = (
       628
       41)
@@ -196,7 +237,6 @@ object frmDLMainForm: TfrmDLMainForm
       ParentDoubleBuffered = True
       TabOrder = 1
       OnClick = btnLaunchClick
-      ExplicitLeft = 532
     end
     object cbxExtraParams: TComboBox
       Left = 64
@@ -209,14 +249,14 @@ object frmDLMainForm: TfrmDLMainForm
   end
   object pnlWADs: TPanel
     Left = 0
-    Top = 188
+    Top = 193
     Width = 628
-    Height = 213
+    Height = 208
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitWidth = 624
-    ExplicitHeight = 212
+    ExplicitTop = 188
+    ExplicitHeight = 213
     object pnlWADFolder: TPanel
       Left = 0
       Top = 0
@@ -225,7 +265,6 @@ object frmDLMainForm: TfrmDLMainForm
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 0
-      ExplicitWidth = 624
       DesignSize = (
         628
         40)
@@ -247,7 +286,6 @@ object frmDLMainForm: TfrmDLMainForm
         ReadOnly = True
         TabOrder = 0
         OnChange = edtWADFolderChange
-        ExplicitWidth = 430
       end
       object btnBrowse: TBitBtn
         Left = 536
@@ -259,14 +297,13 @@ object frmDLMainForm: TfrmDLMainForm
         ParentDoubleBuffered = True
         TabOrder = 1
         OnClick = btnBrowseClick
-        ExplicitLeft = 532
       end
     end
     object gpnlBottomLayout: TGridPanel
       Left = 0
       Top = 40
       Width = 628
-      Height = 173
+      Height = 168
       Align = alClient
       BevelOuter = bvNone
       ColumnCollection = <
@@ -302,19 +339,17 @@ object frmDLMainForm: TfrmDLMainForm
           Value = 100.000000000000000000
         end>
       TabOrder = 1
-      ExplicitWidth = 624
-      ExplicitHeight = 172
+      ExplicitHeight = 173
       object pnlIWADs: TPanel
         Left = 0
         Top = 0
         Width = 175
-        Height = 173
+        Height = 168
         Align = alClient
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 0
-        ExplicitWidth = 312
-        ExplicitHeight = 172
+        ExplicitHeight = 173
         object lblIWADs: TLabel
           AlignWithMargins = True
           Left = 3
@@ -332,7 +367,7 @@ object frmDLMainForm: TfrmDLMainForm
           Left = 3
           Top = 25
           Width = 169
-          Height = 145
+          Height = 140
           Align = alClient
           Anchors = []
           HideSelection = False
@@ -341,22 +376,19 @@ object frmDLMainForm: TfrmDLMainForm
           RowSelect = True
           TabOrder = 0
           OnClick = tvIWADsClick
-          ExplicitWidth = 306
-          ExplicitHeight = 144
+          ExplicitHeight = 145
         end
       end
       object pnlPWADs: TPanel
         Left = 175
         Top = 0
         Width = 175
-        Height = 173
+        Height = 168
         Align = alClient
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitLeft = 312
-        ExplicitWidth = 312
-        ExplicitHeight = 172
+        ExplicitHeight = 173
         object lblPWADs: TLabel
           AlignWithMargins = True
           Left = 3
@@ -374,7 +406,7 @@ object frmDLMainForm: TfrmDLMainForm
           Left = 3
           Top = 25
           Width = 169
-          Height = 145
+          Height = 140
           Align = alClient
           Anchors = []
           HideSelection = False
@@ -383,38 +415,35 @@ object frmDLMainForm: TfrmDLMainForm
           RowSelect = True
           TabOrder = 0
           OnClick = tvPWADsClick
-          ExplicitWidth = 306
-          ExplicitHeight = 144
+          ExplicitHeight = 145
         end
       end
       object pnlText: TPanel
         Left = 350
         Top = 0
         Width = 278
-        Height = 173
+        Height = 168
         Align = alClient
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 2
-        ExplicitLeft = 224
-        ExplicitTop = 64
-        ExplicitWidth = 185
-        ExplicitHeight = 41
+        ExplicitHeight = 173
         object lblWADText: TLabel
           AlignWithMargins = True
           Left = 3
           Top = 3
-          Width = 156
+          Width = 272
           Height = 16
           Align = alTop
           Caption = 'WAD File &Text (if available)'
+          ExplicitWidth = 156
         end
         object mmoWADText: TMemo
           AlignWithMargins = True
           Left = 3
           Top = 25
           Width = 272
-          Height = 145
+          Height = 140
           Align = alClient
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
@@ -425,6 +454,7 @@ object frmDLMainForm: TfrmDLMainForm
           ScrollBars = ssBoth
           TabOrder = 0
           WordWrap = False
+          ExplicitHeight = 145
         end
       end
     end
