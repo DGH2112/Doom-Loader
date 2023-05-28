@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 12.246
+  @Version 12.313
   @Date    28 May 2023
 
   @license
@@ -167,6 +167,8 @@ Const
   strExtraOptionsINISection = 'Extra Options';
   (** A constant to define the INI section for the list of Associated Options. **)
   strAssociatedOptionsINISection = 'Associated Options';
+  (** A resource string for no WAD file. **)
+  strNone = '(none)';
 
 {$R *.dfm}
 
@@ -345,9 +347,16 @@ Begin
     End;
   // Launch the game engine with IWAD and optional PWAD
   strGameEngine := '"' + FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex] + '"';
-  strParams := Format(strIWADCmd, [edtWADFolder.Text + '\' + FSelectedIWAD]) +
-    IfThen(tvPWADs.SelectionCount > 0, Format(#32 + strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]), '') +
-    IfThen(Length(cbxExtraParams.Text) > 0, #32 + cbxExtraParams.Text, '');
+  If CompareText(FSelectedIWAD, strNone) <> 0 Then
+    Begin
+      strParams := Format(strIWADCmd, [edtWADFolder.Text + '\' + FSelectedIWAD]);
+      strParams := strParams + IfThen(
+        (FSelectedPWAD.Length > 0) And (CompareText(FSelectedPWAD, strNone) <> 0),
+        Format(#32 + strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]),
+        ''
+      );
+    End;
+  strParams := strParams + IfThen(Length(cbxExtraParams.Text) > 0, #32 + cbxExtraParams.Text, '');
   strFolder := ExtractFilePath(FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]);
   FillChar(StartupInfo, SizeOf(TStartupInfo), 0);
   StartupInfo.cb := SizeOf(TStartupInfo);
@@ -735,15 +744,13 @@ End;
 **)
 Procedure TfrmDLMainForm.PopulateWADs;
 
-Const
-  strNone = '(none)';
-
 Var
   Item: TTreeNode;
   
 Begin
   tvIWADs.Items.Clear;
   tvPWADs.Items.Clear;
+  Item := tvIWADs.Items.AddChild(Nil, strNone);
   Item := tvPWADs.Items.AddChild(Nil, strNone);
   Item.Selected := CompareText(FSelectedPWAD, strNone) = 0;
   RecurseWADFolders(edtWADFolder.Text);
