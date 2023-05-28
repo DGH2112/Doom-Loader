@@ -3,8 +3,8 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 12.129
-  @Date    20 May 2023
+  @Version 12.246
+  @Date    28 May 2023
 
   @license
 
@@ -75,6 +75,9 @@ Type
     tvIWADs: TTreeView;
     tvPWADs: TTreeView;
     cbxExtraParams: TComboBox;
+    pnlText: TPanel;
+    lblWADText: TLabel;
+    mmoWADText: TMemo;
     procedure btnAddClick(Sender: TObject);
     procedure btnBrowseClick(Sender: TObject);
     procedure btnDeleteClick(Sender: TObject);
@@ -109,6 +112,7 @@ Type
     Function  TreePath(Const Node : TTreeNode) : String;
     Function  Find(Const TreeView : TTreeView; Const Node : TTreeNode;
       Const strFileNamePart : String) : TTreeNode;
+    Procedure LoadWADText(Const strWADFileName  :String);
   Public
   End;
 
@@ -449,6 +453,7 @@ Begin
   PopulateGameEngines;
   PopulateWADs;
   UpdateLaunchBtn;
+  LoadWADText(edtWADFolder.Text + '\' + FSelectedPWAD);
 End;
 
 (**
@@ -636,6 +641,37 @@ Begin
     BuildInfo.FBuild
   ]);
   Caption := Application.Title;
+End;
+
+(**
+
+  This method attempts to load the text file that is associated with the WAD file (same name but ending
+  in TXT). If found it is loaded for displayed else a message is displayed saying a text file cannot be
+  found.
+
+  @precon  None.
+  @postcon The text file is displayed if found.
+
+  @param   strWADFileName as a String as a constant
+
+**)
+Procedure TfrmDLMainForm.LoadWADText(Const strWADFileName: String);
+
+ResourceString
+  strNoAssociatedTextFound = 'No associated text found!';
+
+Const
+  strTxtExt = '.txt';
+
+Var
+  strTxtFileName : String;
+  
+Begin
+  strTxtFileName := ChangeFileExt(strWADFileName, strTxtExt);
+  If FileExists(strTxtFileName) Then
+    mmoWADText.Lines.LoadFromFile(strTxtFileName)
+  Else
+    mmoWADText.Lines.Text := strNoAssociatedTextFound;
 End;
 
 (**
@@ -861,6 +897,7 @@ Begin
   cbxExtraParams.Text := FAssociatedOptions.Values[FSelectedIWAD];
   // Update Launch button
   UpdateLaunchBtn;
+  LoadWADText(edtWADFolder.Text + '\' + FSelectedIWAD);
 End;
 
 (**
@@ -898,6 +935,7 @@ Begin
     ParentNode.Selected := True;
   // Update Launch button
   UpdateLaunchBtn;
+  LoadWADText(edtWADFolder.Text + '\' + FSelectedPWAD);
 End;
 
 (**
