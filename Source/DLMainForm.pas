@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 12.688
+  @Version 12.822
   @Date    29 May 2023
 
   @license
@@ -178,6 +178,8 @@ Const
   strAssociatedOptionsINISection = 'Associated Options';
   (** A resource string for no WAD file. **)
   strNone = '(none)';
+  (** A constant to define the game engine name with INI Key. **)
+  strGameEngineNameWidthINIKey = 'Game Engine Name Width';
 
 {$R *.dfm}
 
@@ -629,6 +631,8 @@ Begin
   FSelectedIWAD := FINIFile.ReadString(strSetupINISection, strSelectedIWADINIKey, '');
   FSelectedPWAD := FINIFile.ReadString(strSetupINISection, strSelectedPWADINIKey, '');
   cbxExtraParams.Text := FINIFile.ReadString(strSetupINISection, strExtraParamsINIKey, '');
+  lvGameEngines.Columns[0].Width := FINIFile.ReadInteger(strSetupINISection, strGameEngineNameWidthINIKey,
+    lvGameEngines.Columns[0].Width);
 End;
 
 (**
@@ -930,6 +934,7 @@ Begin
   For i := 0 To FAssociatedOptions.Count - 1 Do
     FINIFile.WriteString(strAssociatedOptionsINISection, FAssociatedOptions.Names[i],
       FAssociatedOptions.ValueFromIndex[i]);
+  FINIFile.WriteInteger(strSetupINISection, strGameEngineNameWidthINIKey, lvGameEngines.Columns[0].Width);
   If FINIFile.Modified Then
     FINIFile.UpdateFile;
 End;
