@@ -69,7 +69,6 @@ object frmDLMainForm: TfrmDLMainForm
         end>
       ColumnClick = False
       GridLines = True
-      Items.ItemData = {}
       RowSelect = True
       TabOrder = 0
       ViewStyle = vsReport
@@ -231,7 +230,7 @@ object frmDLMainForm: TfrmDLMainForm
       FocusControl = cbxExtraParams
     end
     object btnLaunch: TBitBtn
-      Left = 536
+      Left = 532
       Top = 6
       Width = 85
       Height = 25
@@ -241,16 +240,16 @@ object frmDLMainForm: TfrmDLMainForm
       ParentDoubleBuffered = True
       TabOrder = 1
       OnClick = btnLaunchClick
-      ExplicitLeft = 532
+      ExplicitLeft = 528
     end
     object cbxExtraParams: TComboBox
       Left = 64
       Top = 6
-      Width = 466
+      Width = 462
       Height = 24
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 0
-      ExplicitWidth = 462
+      ExplicitWidth = 458
     end
   end
   object pnlWADs: TPanel
@@ -287,16 +286,16 @@ object frmDLMainForm: TfrmDLMainForm
       object edtWADFolder: TEdit
         Left = 96
         Top = 6
-        Width = 434
+        Width = 430
         Height = 24
         Anchors = [akLeft, akTop, akRight]
         ReadOnly = True
         TabOrder = 0
         OnChange = edtWADFolderChange
-        ExplicitWidth = 430
+        ExplicitWidth = 426
       end
       object btnBrowse: TBitBtn
-        Left = 536
+        Left = 532
         Top = 6
         Width = 85
         Height = 25
@@ -305,7 +304,7 @@ object frmDLMainForm: TfrmDLMainForm
         ParentDoubleBuffered = True
         TabOrder = 1
         OnClick = btnBrowseClick
-        ExplicitLeft = 532
+        ExplicitLeft = 528
       end
     end
     object gpnlBottomLayout: TGridPanel
@@ -475,7 +474,16 @@ object frmDLMainForm: TfrmDLMainForm
     DefaultExt = '.exe'
     Filter = 'Game Engines (*.exe)|*.exe'
     Title = 'Game Engine'
-    Left = 392
-    Top = 64
+    Left = 48
+    Top = 72
+  end
+  object dlgTask: TTaskDialog
+    Buttons = <>
+    CommonButtons = [tcbOk]
+    Flags = [tfEnableHyperlinks, tfAllowDialogCancellation, tfPositionRelativeToWindow]
+    RadioButtons = <>
+    OnHyperlinkClicked = dlgTaskHyperlinkClicked
+    Left = 144
+    Top = 72
   end
 end

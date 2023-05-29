@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 12.822
+  @Version 13.205
   @Date    29 May 2023
 
   @license
@@ -80,6 +80,7 @@ Type
     mmoWADText: TMemo;
     btnUp: TBitBtn;
     btnDown: TBitBtn;
+    dlgTask: TTaskDialog;
     procedure btnAddClick(Sender: TObject);
     procedure btnBrowseClick(Sender: TObject);
     procedure btnDeleteClick(Sender: TObject);
@@ -87,6 +88,7 @@ Type
     procedure btnEditClick(Sender: TObject);
     procedure btnLaunchClick(Sender: TObject);
     procedure btnUpClick(Sender: TObject);
+    procedure dlgTaskHyperlinkClicked(Sender: TObject);
     procedure edtWADFolderChange(Sender: TObject);
     Procedure FormDestroy(Sender: TObject);
     Procedure FormCreate(Sender: TObject);
@@ -120,6 +122,9 @@ Type
       Const strFileNamePart : String) : TTreeNode;
     Procedure LoadWADText(Const strWADFileName  :String);
     Procedure UpdateUpAndDownBtns();
+    Procedure AddSystemMenus();
+    Procedure WMSysCommand(Var Msg : TWMSysCommand); Message WM_SYSCOMMAND; 
+    Procedure DisplayAboutBox();
   Public
   End;
 
@@ -180,9 +185,33 @@ Const
   strNone = '(none)';
   (** A constant to define the game engine name with INI Key. **)
   strGameEngineNameWidthINIKey = 'Game Engine Name Width';
+  (** A constant to define the About Menu ID in the system menu. **)
+  iAboutMenuID = 209;
 
 {$R *.dfm}
 
+
+(**
+
+  This method adds menu items to the system menu.
+
+  @precon  None.
+  @postcon The menus are added.
+
+**)
+Procedure TfrmDLMainForm.AddSystemMenus;
+
+ResourceString
+  strAbout = '&About...';
+
+var
+  SystemMenu: HMENU;
+  
+Begin
+  SystemMenu := GetSystemMenu(Handle, False);
+  AppendMenu(SystemMenu, MF_SEPARATOR, 0, Nil);
+  AppendMenu(SystemMenu, MF_STRING, iAboutMenuID, PChar(strAbout));
+End;
 
 (**
 
@@ -428,6 +457,65 @@ End;
 
 (**
 
+  This method displays the about dialogue with the GP3 licenses information.
+
+  @precon  None.
+  @postcon The GP3 license information is displayed.
+
+  @nospelling
+
+**)
+Procedure TfrmDLMainForm.DisplayAboutBox;
+
+ResourceString
+  strMsg =
+    'DOOM Loader is a simple application to allow you to select different DOOM ' +
+    'game engines, IWADs and PWADs in one single place.'#13#10 +
+    ''#13#10 +
+    'Copyright (C) 2023  David Hoyle ' + 
+    '(<a href="https://github.com/DGH2112/Doom-Loader/">https://github.com/DGH2112/Doom-Loader/</a>)'#13#10 +
+    ''#13#10 +
+    'This program is free software: you can redistribute it and/or modify ' +
+    'it under the terms of the GNU General Public License as published by ' +
+    'the Free Software Foundation, either version 3 of the License, or ' +
+    '(at your option) any later version.'#13#10 +
+    ''#13#10 +
+    'This program is distributed in the hope that it will be useful, ' +
+    'but WITHOUT ANY WARRANTY; without even the implied warranty of ' +
+    'MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the ' +
+    'GNU General Public License for more details.'#13#10 +
+    ''#13#10 +
+    'You should have received a copy of the GNU General Public License' +
+    'along with this program.  If not, see ' +
+    '<a href="https://www.gnu.org/licenses">https://www.gnu.org/licenses</a>.';
+
+Begin
+  dlgTask.Title := Application.Title;
+  dlgTask.Text := strMsg;
+  dlgTask.Execute(Handle);
+End;
+
+(**
+
+  This is an on hyper-link click event handler.
+
+  @precon  None.
+  @postcon Opens the URL that has been clicked.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.dlgTaskHyperlinkClicked(Sender: TObject);
+
+Const
+  strOpen = 'open';
+
+Begin
+  ShellExecute(Handle, strOpen, PChar(dlgTask.URL), Nil, Nil, SW_SHOWNORMAL);
+End;
+
+(**
+
   This is an on change event handler for the WAD edit control.
 
   @precon  None.
@@ -512,6 +600,7 @@ Begin
   PopulateWADs;
   UpdateLaunchBtn;
   LoadWADText(edtWADFolder.Text + '\' + FSelectedPWAD);
+  AddSystemMenus();
 End;
 
 (**
@@ -1060,6 +1149,25 @@ Procedure TfrmDLMainForm.UpdateUpAndDownBtns;
 Begin
   btnUp.Enabled := lvGameEngines.ItemIndex > 0;
   btnDown.Enabled := lvGameEngines.ItemIndex < FGameEngines.Count - 1;
+End;
+
+(**
+
+  This is a custom message handler for the WM_SYSCOMMAND windows message.
+
+  @precon  None.
+  @postcon Intercepts the new menus and invokes them.
+
+  @param   Msg as a TWMSysCommand as a reference
+
+**)
+Procedure TfrmDLMainForm.WMSysCommand(Var Msg: TWMSysCommand);
+
+Begin
+  Case Msg.CmdType Of
+    iAboutMenuID: DisplayAboutBox();
+  End;
+  Inherited;
 End;
 
 End.
