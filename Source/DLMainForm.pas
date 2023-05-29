@@ -3,8 +3,8 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 12.456
-  @Date    28 May 2023
+  @Version 12.688
+  @Date    29 May 2023
 
   @license
 
@@ -90,6 +90,7 @@ Type
     procedure edtWADFolderChange(Sender: TObject);
     Procedure FormDestroy(Sender: TObject);
     Procedure FormCreate(Sender: TObject);
+    procedure lvGameEnginesEdited(Sender: TObject; Item: TListItem; var S: string);
     procedure tvIWADsClick(Sender: TObject);
     procedure tvPWADsClick(Sender: TObject);
     procedure lvGameEnginesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
@@ -97,6 +98,7 @@ Type
     FINIFileName        : String;
     FINIFile            : TMemINIFile;
     FGameEngines        : TStringList;
+    FGameEngineNames    : TStringList;
     FSelectedGameEngine : String;
     FSelectedIWAD       : String;
     FSelectedPWAD       : String;
@@ -150,6 +152,8 @@ Const
   strHeightINIKey = 'Height';
   (** A constant to define the INI Section for the list of Game Engines. **)
   strGameEnginesINISection = 'Game Engines';
+  (** A constant to define the INI Section for the list of Game Engine Names. **)
+  strGameEngineNamesINISection = 'Game Engine Names';
   (** A constant to define the splitter height of the Game Engine section. **)
   strSplitterHeightINIKey = 'SplitterHeight';
   (** A constant to define the selected Game Engine. **)
@@ -235,7 +239,8 @@ Begin
   If dlgOpen.Execute Then
     Begin
       FGameEngines.AddPair(Format(strItem, [FGameEngines.Count]), dlgOpen.FileName);
-      FSelectedGameEngine := ExtractFileName(dlgOpen.FileName);
+      FGameEngineNames.AddPair(Format(strItem, [FGameEngines.Count]), ExtractFileName(dlgOpen.FileName));
+      FSelectedGameEngine := dlgOpen.FileName;
       PopulateGameEngines;
       UpdateLaunchBtn;
     End;
@@ -278,6 +283,7 @@ Begin
   If lvGameEngines.ItemIndex = - 1 Then
     Exit;
   FGameEngines.Delete(lvGameEngines.ItemIndex);
+  FGameEngineNames.Delete(lvGameEngines.ItemIndex);
   PopulateGameEngines;
   UpdateLaunchBtn;
 End;
@@ -296,6 +302,7 @@ Procedure TfrmDLMainForm.btnDownClick(Sender: TObject);
 
 Begin
   FGameEngines.Exchange(lvGameEngines.ItemIndex, lvGameEngines.ItemIndex + 1);
+  FGameEngineNames.Exchange(lvGameEngines.ItemIndex, lvGameEngines.ItemIndex + 1);
   PopulateGameEngines;
 End;
 
@@ -318,8 +325,8 @@ Begin
   dlgOpen.FileName := ExtractFileName(FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]);
   If dlgOpen.Execute Then
     Begin
-      FGameEngines[lvGameEngines.ItemIndex] := dlgOpen.FileName;
-      FSelectedGameEngine := ExtractFileName(dlgOpen.FileName);
+      FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex] := dlgOpen.FileName;
+      FSelectedGameEngine := dlgOpen.FileName;
       PopulateGameEngines;
       UpdateLaunchBtn;
     End;
@@ -340,15 +347,14 @@ End;
 Procedure TfrmDLMainForm.btnLaunchClick(Sender: TObject);
 
 ResourceString
-  strExitCodeMsg = 'The process "%s" exited with error code %d';
+  strExitCodeMsg = 'The process ''%s'' exited with error code %d';
 
 Const
-  strIWADCmd = '-iwad "%s"';
-  strPWADCmd = '-file "%s"';
+  strIWADCmd = ' -iwad "%s"';
+  strPWADCmd = ' -file "%s"';
   iWaitInMilliSec = 100;
 
 Var
-  strGameEngine : String;
   strParams :String;
   strFolder : String;
   StartupInfo : TStartupInfo;
@@ -368,13 +374,13 @@ Begin
       FAssociatedOptions.Values[FSelectedIWAD] := cbxExtraParams.Text;
     End;
   // Launch the game engine with IWAD and optional PWAD
-  strGameEngine := '"' + FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex] + '"';
+  strParams := Format('"%s"', [FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]]);
   If CompareText(FSelectedIWAD, strNone) <> 0 Then
     Begin
-      strParams := Format(strIWADCmd, [edtWADFolder.Text + '\' + FSelectedIWAD]);
+      strParams := strParams + Format(strIWADCmd, [edtWADFolder.Text + '\' + FSelectedIWAD]);
       strParams := strParams + IfThen(
         (FSelectedPWAD.Length > 0) And (CompareText(FSelectedPWAD, strNone) <> 0),
-        Format(#32 + strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]),
+        Format(strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]),
         ''
       );
     End;
@@ -386,13 +392,13 @@ Begin
   StartupInfo.wShowWindow := SW_NORMAL;
   StartupInfo.hStdOutput  := 0;
   StartupInfo.hStdError   := 0;
-  Win32Check(CreateProcess(Nil, PChar(strGameEngine + #32 + strParams), Nil, Nil, False, 0, Nil,
+  Win32Check(CreateProcess(Nil, PChar(strParams), Nil, Nil, False, 0, Nil,
     PChar(strFolder), StartupInfo, ProcessInfo));
   Try
     While WaitforSingleObject(ProcessInfo.hProcess, iWaitInMilliSec) = WAIT_TIMEOUT Do;
     If GetExitCodeProcess(ProcessInfo.hProcess, iExitCode) Then
       If iExitCode > 0 Then
-        TaskMessageDlg(Application.Title, Format(strExitCodeMsg, [strGameEngine, iExitCode]), mtError,
+        TaskMessageDlg(Application.Title, Format(strExitCodeMsg, [strParams, iExitCode]), mtError,
           [mbOK], 0);
   Finally
     Win32Check(CloseHandle(ProcessInfo.hThread));
@@ -414,6 +420,7 @@ Procedure TfrmDLMainForm.btnUpClick(Sender: TObject);
 
 Begin
   FGameEngines.Exchange(lvGameEngines.ItemIndex, lvGameEngines.ItemIndex - 1);
+  FGameEngineNames.Exchange(lvGameEngines.ItemIndex, lvGameEngines.ItemIndex - 1);
   PopulateGameEngines;
 End;
 
@@ -489,6 +496,7 @@ Begin
   FINIFileName := TPath.GetHomePath + strSeasonFallDoomLoaderIni;
   FINIFile := TMemINIFile.Create(FINIFileName);
   FGameEngines := TStringList.Create;
+  FGameEngineNames := TStringList.Create;
   FIWADExceptions := TStringList.Create;
   FIWADExceptions.Sorted := True;
   FIWADExceptions.CaseSensitive := False;
@@ -521,6 +529,7 @@ Begin
   FAssociatedOptions.Free;
   FAssociatedIWAD.Free;
   FIWADExceptions.Free;
+  FGameEngineNames.Free;
   FGameEngines.Free;
   FINIFile.Free;
 End;
@@ -594,7 +603,12 @@ Begin
   Try
     FINIFile.ReadSection(strGameEnginesINISection, sl);
     For strItem In sl Do
-      FGameEngines.AddPair(strItem, FINIFile.ReadString(strGameEnginesINISection, strItem, ''));
+      Begin
+        FGameEngines.AddPair(strItem, FINIFile.ReadString(strGameEnginesINISection, strItem, ''));
+        FGameEngineNames.AddPair(strItem, FINIFile.ReadString(strGameEngineNamesINISection, strItem,
+           // Default is the Game Engine Name
+          ExtractFileName(FINIFile.ReadString(strGameEnginesINISection, strItem, ''))));
+      End;
     FINIFile.ReadSection(strIWADExceptions, sl);
     For strItem In sl Do
       FIWADExceptions.Add(strItem);
@@ -724,6 +738,24 @@ End;
 
 (**
 
+  This is an on edited event handler for the Game Engines list view.
+
+  @precon  None.
+  @postcon Updates the game engine name based on the edited text.
+
+  @param   Sender as a TObject
+  @param   Item   as a TListItem
+  @param   S      as a String as a reference
+
+**)
+Procedure TfrmDLMainForm.lvGameEnginesEdited(Sender: TObject; Item: TListItem; Var S: String);
+
+Begin
+  FGameEngineNames.ValueFromIndex[lvGameEngines.ItemIndex] := S;
+End;
+
+(**
+
   This is an on select item event handler for the Game Engine list view.
 
   @precon  None.
@@ -738,7 +770,7 @@ End;
 Procedure TfrmDLMainForm.lvGameEnginesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
 
 Begin
-  FSelectedGameEngine := Item.Caption;
+  FSelectedGameEngine := Item.SubItems[0];
   UpdateUpAndDownBtns;
   UpdateLaunchBtn;
 End;
@@ -764,9 +796,9 @@ Begin
     For iGameEngine := 0 To FGameEngines.Count - 1 Do
       Begin
         Item := lvGameEngines.Items.Add;
-        Item.Caption := ExtractFileName(FGameEngines.ValueFromIndex[iGameEngine]);
-        Item.SubItems.Add(ExtractFilePath(FGameEngines.ValueFromIndex[iGameEngine]));
-        If CompareText(FSelectedGameEngine, Item.Caption) = 0 Then
+        Item.Caption := FGameEngineNames.ValueFromIndex[iGameEngine];
+        Item.SubItems.Add(FGameEngines.ValueFromIndex[iGameEngine]);
+        If CompareText(FSelectedGameEngine, Item.SubItems[0]) = 0 Then
           Item.Selected := True;
       End;
   Finally
@@ -791,6 +823,7 @@ Begin
   tvIWADs.Items.Clear;
   tvPWADs.Items.Clear;
   Item := tvIWADs.Items.AddChild(Nil, strNone);
+  Item.Selected := CompareText(FSelectedIWAD, strNone) = 0;
   Item := tvPWADs.Items.AddChild(Nil, strNone);
   Item.Selected := CompareText(FSelectedPWAD, strNone) = 0;
   RecurseWADFolders(edtWADFolder.Text);
@@ -876,6 +909,9 @@ Begin
   FINIFile.EraseSection(strGameEnginesINISection);
   For i := 0 To FGameEngines.Count - 1 Do
     FINIFile.WriteString(strGameEnginesINISection, Format(strItem, [i]), FGameEngines.ValueFromIndex[i]);
+  FINIFile.EraseSection(strGameEngineNamesINISection);
+  For i := 0 To FGameEngineNames.Count - 1 Do
+    FINIFile.WriteString(strGameEngineNamesINISection, Format(strItem, [i]), FGameEngineNames.ValueFromIndex[i]);
   FINIFile.EraseSection(strIWADExceptions);
   For i := 0 To FIWADExceptions.Count - 1 Do
     FINIFile.WriteString(strIWADExceptions, FIWADExceptions[i], FIWADExceptions[i]);
@@ -979,7 +1015,10 @@ Begin
         ParentNode := Node;
     End;
   If Assigned(ParentNode) Then
-    ParentNode.Selected := True;
+    Begin
+      ParentNode.Selected := True;
+      FSelectedIWAD := strIWAD;
+    End;
   // Update Launch button
   UpdateLaunchBtn;
   LoadWADText(edtWADFolder.Text + '\' + FSelectedPWAD);
@@ -1015,7 +1054,7 @@ Procedure TfrmDLMainForm.UpdateUpAndDownBtns;
 
 Begin
   btnUp.Enabled := lvGameEngines.ItemIndex > 0;
-  btnDown.Enabled := lvGameEngines.ItemIndex < lvGameEngines.Items.Count - 1;
+  btnDown.Enabled := lvGameEngines.ItemIndex < FGameEngines.Count - 1;
 End;
 
 End.

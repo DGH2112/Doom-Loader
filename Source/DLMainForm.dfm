@@ -60,18 +60,17 @@ object frmDLMainForm: TfrmDLMainForm
       Columns = <
         item
           Caption = 'Game Engine'
-          Width = 150
+          Width = 200
         end
         item
           AutoSize = True
           Caption = 'Location'
         end>
-      ReadOnly = True
       RowSelect = True
       TabOrder = 0
       ViewStyle = vsReport
+      OnEdited = lvGameEnginesEdited
       OnSelectItem = lvGameEnginesSelectItem
-      ExplicitHeight = 149
     end
     object pnlGameEngineBtns: TPanel
       Left = 537
@@ -432,11 +431,10 @@ object frmDLMainForm: TfrmDLMainForm
           AlignWithMargins = True
           Left = 3
           Top = 3
-          Width = 272
+          Width = 156
           Height = 16
           Align = alTop
           Caption = 'WAD File &Text (if available)'
-          ExplicitWidth = 156
         end
         object mmoWADText: TMemo
           AlignWithMargins = True
