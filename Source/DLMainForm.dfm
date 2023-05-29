@@ -50,6 +50,7 @@ object frmDLMainForm: TfrmDLMainForm
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
+    ExplicitWidth = 624
     object lvGameEngines: TListView
       AlignWithMargins = True
       Left = 3
@@ -60,18 +61,21 @@ object frmDLMainForm: TfrmDLMainForm
       Columns = <
         item
           Caption = 'Game Engine'
-          Width = 150
+          Width = 200
         end
         item
           AutoSize = True
           Caption = 'Location'
         end>
-      ReadOnly = True
+      ColumnClick = False
+      GridLines = True
+      Items.ItemData = {}
       RowSelect = True
       TabOrder = 0
       ViewStyle = vsReport
+      OnEdited = lvGameEnginesEdited
       OnSelectItem = lvGameEnginesSelectItem
-      ExplicitHeight = 149
+      ExplicitWidth = 527
     end
     object pnlGameEngineBtns: TPanel
       Left = 537
@@ -81,7 +85,7 @@ object frmDLMainForm: TfrmDLMainForm
       Align = alRight
       BevelOuter = bvNone
       TabOrder = 1
-      ExplicitHeight = 155
+      ExplicitLeft = 533
       object btnAdd: TBitBtn
         AlignWithMargins = True
         Left = 3
@@ -180,7 +184,6 @@ object frmDLMainForm: TfrmDLMainForm
         ParentDoubleBuffered = True
         TabOrder = 3
         OnClick = btnUpClick
-        ExplicitTop = 127
       end
       object btnDown: TBitBtn
         AlignWithMargins = True
@@ -202,7 +205,6 @@ object frmDLMainForm: TfrmDLMainForm
         ParentDoubleBuffered = True
         TabOrder = 4
         OnClick = btnDownClick
-        ExplicitTop = 135
       end
     end
   end
@@ -214,6 +216,8 @@ object frmDLMainForm: TfrmDLMainForm
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 2
+    ExplicitTop = 400
+    ExplicitWidth = 624
     DesignSize = (
       628
       41)
@@ -237,6 +241,7 @@ object frmDLMainForm: TfrmDLMainForm
       ParentDoubleBuffered = True
       TabOrder = 1
       OnClick = btnLaunchClick
+      ExplicitLeft = 532
     end
     object cbxExtraParams: TComboBox
       Left = 64
@@ -245,6 +250,7 @@ object frmDLMainForm: TfrmDLMainForm
       Height = 24
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 0
+      ExplicitWidth = 462
     end
   end
   object pnlWADs: TPanel
@@ -255,8 +261,8 @@ object frmDLMainForm: TfrmDLMainForm
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitTop = 188
-    ExplicitHeight = 213
+    ExplicitWidth = 624
+    ExplicitHeight = 207
     object pnlWADFolder: TPanel
       Left = 0
       Top = 0
@@ -265,6 +271,7 @@ object frmDLMainForm: TfrmDLMainForm
       Align = alTop
       BevelOuter = bvNone
       TabOrder = 0
+      ExplicitWidth = 624
       DesignSize = (
         628
         40)
@@ -286,6 +293,7 @@ object frmDLMainForm: TfrmDLMainForm
         ReadOnly = True
         TabOrder = 0
         OnChange = edtWADFolderChange
+        ExplicitWidth = 430
       end
       object btnBrowse: TBitBtn
         Left = 536
@@ -297,6 +305,7 @@ object frmDLMainForm: TfrmDLMainForm
         ParentDoubleBuffered = True
         TabOrder = 1
         OnClick = btnBrowseClick
+        ExplicitLeft = 532
       end
     end
     object gpnlBottomLayout: TGridPanel
@@ -339,7 +348,8 @@ object frmDLMainForm: TfrmDLMainForm
           Value = 100.000000000000000000
         end>
       TabOrder = 1
-      ExplicitHeight = 173
+      ExplicitWidth = 624
+      ExplicitHeight = 167
       object pnlIWADs: TPanel
         Left = 0
         Top = 0
@@ -349,7 +359,7 @@ object frmDLMainForm: TfrmDLMainForm
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 0
-        ExplicitHeight = 173
+        ExplicitHeight = 167
         object lblIWADs: TLabel
           AlignWithMargins = True
           Left = 3
@@ -376,7 +386,7 @@ object frmDLMainForm: TfrmDLMainForm
           RowSelect = True
           TabOrder = 0
           OnClick = tvIWADsClick
-          ExplicitHeight = 145
+          ExplicitHeight = 139
         end
       end
       object pnlPWADs: TPanel
@@ -388,7 +398,7 @@ object frmDLMainForm: TfrmDLMainForm
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitHeight = 173
+        ExplicitHeight = 167
         object lblPWADs: TLabel
           AlignWithMargins = True
           Left = 3
@@ -415,7 +425,7 @@ object frmDLMainForm: TfrmDLMainForm
           RowSelect = True
           TabOrder = 0
           OnClick = tvPWADsClick
-          ExplicitHeight = 145
+          ExplicitHeight = 139
         end
       end
       object pnlText: TPanel
@@ -427,7 +437,8 @@ object frmDLMainForm: TfrmDLMainForm
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 2
-        ExplicitHeight = 173
+        ExplicitWidth = 274
+        ExplicitHeight = 167
         object lblWADText: TLabel
           AlignWithMargins = True
           Left = 3
@@ -454,7 +465,8 @@ object frmDLMainForm: TfrmDLMainForm
           ScrollBars = ssBoth
           TabOrder = 0
           WordWrap = False
-          ExplicitHeight = 145
+          ExplicitWidth = 268
+          ExplicitHeight = 139
         end
       end
     end

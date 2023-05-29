@@ -19,7 +19,7 @@ CompileWithBRCC32=0
 MajorVer=1
 MinorVer=0
 ReleaseVer=0
-BuildVer=104
+BuildVer=135
 ResourceName=DoomLoaderITHVerInfo
 WarnBefore=1
 WarnAfter=1
@@ -34,7 +34,7 @@ ExclusionFiles=
 [VersionInfo]
 CompanyName=David Hoyle
 FileDescription=DOOM Loader: A simple application to allow you to select various gaming engines to launch different IWAD and PADs.
-FileVersion=1.0.0.104
+FileVersion=1.0.0.135
 InternalName=DOOMLoader
 LegalCopyright=David Hoyle
 LegalTrademarks=David Hoyle
