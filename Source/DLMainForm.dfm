@@ -358,7 +358,6 @@ object frmDLMainForm: TfrmDLMainForm
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 0
-        ExplicitHeight = 167
         object lblIWADs: TLabel
           AlignWithMargins = True
           Left = 3
@@ -385,7 +384,6 @@ object frmDLMainForm: TfrmDLMainForm
           RowSelect = True
           TabOrder = 0
           OnClick = tvIWADsClick
-          ExplicitHeight = 139
         end
       end
       object pnlPWADs: TPanel
@@ -397,7 +395,6 @@ object frmDLMainForm: TfrmDLMainForm
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitHeight = 167
         object lblPWADs: TLabel
           AlignWithMargins = True
           Left = 3
@@ -424,7 +421,6 @@ object frmDLMainForm: TfrmDLMainForm
           RowSelect = True
           TabOrder = 0
           OnClick = tvPWADsClick
-          ExplicitHeight = 139
         end
       end
       object pnlText: TPanel
@@ -436,8 +432,6 @@ object frmDLMainForm: TfrmDLMainForm
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 2
-        ExplicitWidth = 274
-        ExplicitHeight = 167
         object lblWADText: TLabel
           AlignWithMargins = True
           Left = 3
@@ -464,8 +458,6 @@ object frmDLMainForm: TfrmDLMainForm
           ScrollBars = ssBoth
           TabOrder = 0
           WordWrap = False
-          ExplicitWidth = 268
-          ExplicitHeight = 139
         end
       end
     end

@@ -3,8 +3,8 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 13.205
-  @Date    29 May 2023
+  @Version 13.501
+  @Date    02 Jun 2023
 
   @license
 
@@ -31,7 +31,7 @@ Unit DLMainForm;
 
 Interface
 
-Uses
+uses
   System.SysUtils,
   System.Variants,
   System.Classes,
@@ -45,7 +45,8 @@ Uses
   Vcl.ExtCtrls,
   Vcl.StdCtrls,
   Vcl.ComCtrls,
-  Vcl.Buttons;
+  Vcl.Buttons,
+  DLTypes;
 
 Type
   (** A form to represent the applications main interface. **)
@@ -107,6 +108,7 @@ Type
     FIWADExceptions     : TStringList;
     FAssociatedIWAD     : TStringList;
     FAssociatedOptions  : TStringList;
+    FDLOptions          : TDLOptionsRecord;
   Strict Protected
     Procedure LoadSettings;
     Procedure SaveSettings;
@@ -125,6 +127,8 @@ Type
     Procedure AddSystemMenus();
     Procedure WMSysCommand(Var Msg : TWMSysCommand); Message WM_SYSCOMMAND; 
     Procedure DisplayAboutBox();
+    Procedure PlayPauseMedia();
+    Procedure DisplayOptions();
   Public
   End;
 
@@ -141,8 +145,10 @@ uses
   System.IOUtils,
   System.StrUtils,
   System.UITypes,
+  System.TypInfo,
   Winapi.ShellAPI,
-  Vcl.FileCtrl;
+  Vcl.FileCtrl,
+  DLOptionsForm;
 
 Const
   (** A constant to define the INI Section for the positional date of the application. **)
@@ -185,6 +191,8 @@ Const
   strNone = '(none)';
   (** A constant to define the game engine name with INI Key. **)
   strGameEngineNameWidthINIKey = 'Game Engine Name Width';
+  (** A constant to define the Options Menu ID in the system menu. **)
+  iOptionsMenuID = 201;
   (** A constant to define the About Menu ID in the system menu. **)
   iAboutMenuID = 209;
 
@@ -203,12 +211,15 @@ Procedure TfrmDLMainForm.AddSystemMenus;
 
 ResourceString
   strAbout = '&About...';
+  strOptions = '&Options...';
 
 var
   SystemMenu: HMENU;
   
 Begin
   SystemMenu := GetSystemMenu(Handle, False);
+  AppendMenu(SystemMenu, MF_SEPARATOR, 0, Nil);
+  AppendMenu(SystemMenu, MF_STRING, iOptionsMenuID, PChar(strOptions));
   AppendMenu(SystemMenu, MF_SEPARATOR, 0, Nil);
   AppendMenu(SystemMenu, MF_STRING, iAboutMenuID, PChar(strAbout));
 End;
@@ -393,6 +404,8 @@ Var
   iExitCode : Cardinal;
  
 Begin
+  If dloPauseMedia In FDLOptions.FOptions Then
+    PlayPauseMedia();
   // Save Associated IWAD
   If Assigned(tvPWADs.Selected) Then
     FAssociatedIWAD.Values[TreePath(tvPWADs.Selected)] := FSelectedIWAD;
@@ -435,6 +448,8 @@ Begin
     Win32Check(CloseHandle(ProcessInfo.hThread));
     Win32Check(CloseHandle(ProcessInfo.hProcess));
   End;
+  If dloStartMedia In FDLOptions.FOptions Then
+    PlayPauseMedia();
 End;
 
 (**
@@ -493,6 +508,20 @@ Begin
   dlgTask.Title := Application.Title;
   dlgTask.Text := strMsg;
   dlgTask.Execute(Handle);
+End;
+
+(**
+
+  This method displays the options form.
+
+  @precon  None.
+  @postcon The options for is displayed.
+
+**)
+Procedure TfrmDLMainForm.DisplayOptions;
+
+Begin
+  TfrmDLOptions.Execute(FDLOptions);
 End;
 
 (**
@@ -682,6 +711,7 @@ Procedure TfrmDLMainForm.LoadSettings;
 Var
   sl : TStringList;
   strItem: String;
+  eOption: TDLOption;
 
 Begin
   Top := FINIFile.ReadInteger(strPositionINISection, strTopINIKey, Top);
@@ -722,6 +752,9 @@ Begin
   cbxExtraParams.Text := FINIFile.ReadString(strSetupINISection, strExtraParamsINIKey, '');
   lvGameEngines.Columns[0].Width := FINIFile.ReadInteger(strSetupINISection, strGameEngineNameWidthINIKey,
     lvGameEngines.Columns[0].Width);
+  For eOption := Low(TDLOption) To High(TDLOption) Do
+    If FINIFile.ReadBool(strSetupINISection, GetEnumName(TypeInfo(TDLOption), Ord(eOption)), False) Then
+      Include(FDLOptions.FOptions, eOption);
 End;
 
 (**
@@ -870,6 +903,30 @@ End;
 
 (**
 
+  This method simulates the pressing of the Play/Pause button on the keyboard to start and stop the
+  systems currently active media player.
+
+  @precon  None.
+  @postcon starts or pauses the currently playing music.
+
+**)
+Procedure TfrmDLMainForm.PlayPauseMedia;
+
+Var
+  recInput : Array[0..1] Of TInput;
+  
+Begin
+  ZeroMemory(@recInput, SizeOf(recInput));
+  recInput[0].Itype := INPUT_KEYBOARD;
+  recInput[0].ki.wVk := VK_MEDIA_PLAY_PAUSE;
+  recInput[1].Itype := INPUT_KEYBOARD;
+  recInput[1].ki.wVk := VK_MEDIA_PLAY_PAUSE;
+  recInput[1].ki.dwFlags := KEYEVENTF_KEYUP;
+  SendInput(Length(recInput), recInput[0], SizeOf(TINPUT));
+End;
+
+(**
+
   This method populates the game engines from the FGameEngines string list.
 
   @precon  None.
@@ -992,6 +1049,7 @@ Const
 
 Var
   i: Integer;
+  eOption : TDLOption;
 
 Begin
   FINIFile.WriteInteger(strPositionINISection, strTopINIKey, Top);
@@ -1024,6 +1082,9 @@ Begin
     FINIFile.WriteString(strAssociatedOptionsINISection, FAssociatedOptions.Names[i],
       FAssociatedOptions.ValueFromIndex[i]);
   FINIFile.WriteInteger(strSetupINISection, strGameEngineNameWidthINIKey, lvGameEngines.Columns[0].Width);
+  For eOption := Low(TDLOption) To High(TDLOption) Do
+    FINIFile.WriteBool(strSetupINISection, GetEnumName(TypeInfo(TDLOption), Ord(eOption)),
+      eOption In FDLOptions.FOptions);
   If FINIFile.Modified Then
     FINIFile.UpdateFile;
 End;
@@ -1166,6 +1227,7 @@ Procedure TfrmDLMainForm.WMSysCommand(Var Msg: TWMSysCommand);
 Begin
   Case Msg.CmdType Of
     iAboutMenuID: DisplayAboutBox();
+    iOptionsMenuID : DisplayOptions();
   End;
   Inherited;
 End;

@@ -113,6 +113,12 @@
             <Form>frmDLMainForm</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="Source\DLTypes.pas"/>
+        <DCCReference Include="Source\DLOptionsForm.pas">
+            <Form>frmDLOptions</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="Source\DLConstants.pas"/>
         <None Include="License.md"/>
         <None Include="Readme.md"/>
         <None Include="Contributing.md"/>

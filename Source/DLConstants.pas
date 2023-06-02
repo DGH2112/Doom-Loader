@@ -1,10 +1,10 @@
 (**
   
-  This module contains the project code for creating the application.
+  This module contains constants for use in the application.
 
   @Author  David Hoyle
-  @Version 1.111
-  @Date    28 May 2023
+  @Version 1.139
+  @Date    02 Jun 2023
   
   @license
 
@@ -27,26 +27,26 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 **)
-Program DoomLoader;
+Unit DLConstants;
 
-{$R 'DoomLoaderITHVerInfo.res' 'DoomLoaderITHVerInfo.RC'}
+Interface
 
-uses
-  Vcl.Forms,
-  DLMainForm in 'Source\DLMainForm.pas' {frmDLMainForm},
-  DLTypes in 'Source\DLTypes.pas',
-  DLOptionsForm in 'Source\DLOptionsForm.pas' {frmDLOptions},
-  DLConstants in 'Source\DLConstants.pas';
+Uses
+  DLTypes;
 
-{$R *.res}
+ResourceString
+  (** A resource string for option to pause the media player on launch. **)
+  strPauseMediaPlayer = 'Pause system media player music before launching';
+  (** A resource string for option to start the media player after finishing. **)
+  strStartMediaPlayer = 'Start system media player music after finishing';
 
+Const
+  (** A constant record of boolean option descriptions. **)
+  astrOptionDescription : Array[TDLOption] Of String = (
+    strPauseMediaPlayer,
+    strStartMediaPlayer
+  );
 
-Begin
-  ReportMemoryLeaksOnShutdown := True;
-  Application.Initialize;
-  Application.MainFormOnTaskbar := True;
-  Application.Title := 'Doom Loader';
-  Application.CreateForm(TfrmDLMainForm, frmDLMainForm);
-  Application.Run;
+Implementation
 
 End.
