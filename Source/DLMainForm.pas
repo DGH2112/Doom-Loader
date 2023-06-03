@@ -3,8 +3,8 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 13.501
-  @Date    02 Jun 2023
+  @Version 13.821
+  @Date    03 Jun 2023
 
   @license
 
@@ -129,6 +129,7 @@ Type
     Procedure DisplayAboutBox();
     Procedure PlayPauseMedia();
     Procedure DisplayOptions();
+    Procedure SaveExtraOptions();
   Public
   End;
 
@@ -195,6 +196,8 @@ Const
   iOptionsMenuID = 201;
   (** A constant to define the About Menu ID in the system menu. **)
   iAboutMenuID = 209;
+  (** A constant to define the INI Key for the extra command line parameters association. **)
+  strExtraOpsAssocINIKey = 'Extra Options Association';
 
 {$R *.dfm}
 
@@ -404,19 +407,15 @@ Var
   iExitCode : Cardinal;
  
 Begin
+  If lvGameEngines.IsEditing Then
+    Exit;
   If dloPauseMedia In FDLOptions.FOptions Then
     PlayPauseMedia();
   // Save Associated IWAD
   If Assigned(tvPWADs.Selected) Then
     FAssociatedIWAD.Values[TreePath(tvPWADs.Selected)] := FSelectedIWAD;
   // Save Extra Options to the dropdown list
-  If Length(cbxExtraParams.Text) > 0 Then
-    Begin
-      If cbxExtraParams.Items.IndexOf(cbxExtraParams.Text) = -1 Then
-        cbxExtraParams.Items.Add(cbxExtraParams.Text);
-      //: @note Might want to have this configurable, i.e. IWAD, PWAD or Game Engine.
-      FAssociatedOptions.Values[FSelectedIWAD] := cbxExtraParams.Text;
-    End;
+  SaveExtraOptions();
   // Launch the game engine with IWAD and optional PWAD
   strParams := Format('"%s"', [FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]]);
   If CompareText(FSelectedIWAD, strNone) <> 0 Then
@@ -755,6 +754,8 @@ Begin
   For eOption := Low(TDLOption) To High(TDLOption) Do
     If FINIFile.ReadBool(strSetupINISection, GetEnumName(TypeInfo(TDLOption), Ord(eOption)), False) Then
       Include(FDLOptions.FOptions, eOption);
+  FDLOptions.FExtraOps := TDLExtraOpsAssociation(FINIFile.ReadInteger(strSetupINISection,
+    strExtraOpsAssocINIKey, Integer(doaGameEngine)));
 End;
 
 (**
@@ -876,7 +877,19 @@ End;
 **)
 Procedure TfrmDLMainForm.lvGameEnginesEdited(Sender: TObject; Item: TListItem; Var S: String);
 
+Var
+  iIndex: Integer;
+  strExtraOps: String;
+
 Begin
+  If FDLOptions.FExtraOps = doaGameEngine Then
+    Begin
+      strExtraOps := FAssociatedOptions.Values[Item.Caption];
+      FAssociatedOptions.Values[S] := strExtraOps;
+      iIndex := FAssociatedOptions.IndexOfName(Item.Caption);
+      If iIndex > -1 Then
+        FAssociatedOptions.Delete(iIndex);
+    End;
   FGameEngineNames.ValueFromIndex[lvGameEngines.ItemIndex] := S;
 End;
 
@@ -897,6 +910,8 @@ Procedure TfrmDLMainForm.lvGameEnginesSelectItem(Sender: TObject; Item: TListIte
 
 Begin
   FSelectedGameEngine := Item.SubItems[0];
+  If FDLOptions.FExtraOps = doaGameEngine Then
+    cbxExtraParams.Text := FAssociatedOptions.Values[Item.Caption];
   UpdateUpAndDownBtns;
   UpdateLaunchBtn;
 End;
@@ -1036,6 +1051,30 @@ End;
 
 (**
 
+  This method saves the extra options associations.
+
+  @precon  None.
+  @postcon The Extra Options Association are saved to either the Game Engine, IPAD or PWAD as per the
+           options.
+
+**)
+Procedure TfrmDLMainForm.SaveExtraOptions;
+
+Begin
+  If Length(cbxExtraParams.Text) > 0 Then
+    Begin
+      If cbxExtraParams.Items.IndexOf(cbxExtraParams.Text) = -1 Then
+        cbxExtraParams.Items.Add(cbxExtraParams.Text);
+      Case FDLOptions.FExtraOps Of
+        doaGameEngine: FAssociatedOptions.Values[lvGameEngines.Selected.Caption] := cbxExtraParams.Text;
+        doaIWAD: FAssociatedOptions.Values[FSelectedIWAD] := cbxExtraParams.Text;
+        doaPWAD: FAssociatedOptions.Values[FSelectedPWAD] := cbxExtraParams.Text;
+      End;
+    End;
+End;
+
+(**
+
   This method saves the applications settings.
 
   @precon  None.
@@ -1085,6 +1124,7 @@ Begin
   For eOption := Low(TDLOption) To High(TDLOption) Do
     FINIFile.WriteBool(strSetupINISection, GetEnumName(TypeInfo(TDLOption), Ord(eOption)),
       eOption In FDLOptions.FOptions);
+  FINIFile.WriteInteger(strSetupINISection, strExtraOpsAssocINIKey, Integer(FDLOptions.FExtraOps));
   If FINIFile.Modified Then
     FINIFile.UpdateFile;
 End;
@@ -1132,7 +1172,8 @@ Procedure TfrmDLMainForm.tvIWADsClick(Sender: TObject);
 Begin
   FSelectedIWAD := TreePath(tvIWADs.Selected);
   // Update Extra Options
-  cbxExtraParams.Text := FAssociatedOptions.Values[FSelectedIWAD];
+  If FDLOptions.FExtraOps = doaGameEngine Then
+    cbxExtraParams.Text := FAssociatedOptions.Values[FSelectedIWAD];
   // Update Launch button
   UpdateLaunchBtn;
   LoadWADText(edtWADFolder.Text + '\' + FSelectedIWAD);
@@ -1159,6 +1200,9 @@ Var
   
 Begin
   FSelectedPWAD := TreePath(tvPWADs.Selected);
+  // Update Extra Options
+  If FDLOptions.FExtraOps = doaGameEngine Then
+    cbxExtraParams.Text := FAssociatedOptions.Values[FSelectedPWAD];
   // Update associated IWAD
   strIWAD := FAssociatedIWAD.Values[FSelectedPWAD];
   astrFileName := strIWAD.Split(['\']);
