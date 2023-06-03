@@ -3,8 +3,8 @@
   This module contains constants for use in the application.
 
   @Author  David Hoyle
-  @Version 1.139
-  @Date    02 Jun 2023
+  @Version 1.220
+  @Date    03 Jun 2023
   
   @license
 
@@ -39,12 +39,25 @@ ResourceString
   strPauseMediaPlayer = 'Pause system media player music before launching';
   (** A resource string for option to start the media player after finishing. **)
   strStartMediaPlayer = 'Start system media player music after finishing';
+  (** A resource string to describe the extra options being associated with the Game Engines. **)
+  strExtraOpsGameEngines = 'Extra Options are associated with the Game Engines';
+  (** A resource string to describe the extra options being associated with the IWAD. **)
+  strExtraOpsIWADs = 'Extra Options are associated with the IWAD';
+  (** A resource string to describe the extra options being associated with the PWAD. **)
+  strExtraOpsPWADs = 'Extra Options are associated with the PWAD';
 
 Const
   (** A constant record of boolean option descriptions. **)
   astrOptionDescription : Array[TDLOption] Of String = (
     strPauseMediaPlayer,
     strStartMediaPlayer
+  );
+
+  (** A constant record to describe the extra options associations. **)
+  astrExtraOpsDescriptions : Array[TDLExtraOpsAssociation] Of String = (
+    strExtraOpsGameEngines,
+    strExtraOpsIWADs,
+    strExtraOpsPWADs
   );
 
 Implementation

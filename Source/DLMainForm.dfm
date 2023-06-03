@@ -249,7 +249,6 @@ object frmDLMainForm: TfrmDLMainForm
       Height = 24
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 0
-      ExplicitWidth = 458
     end
   end
   object pnlWADs: TPanel
@@ -436,11 +435,10 @@ object frmDLMainForm: TfrmDLMainForm
           AlignWithMargins = True
           Left = 3
           Top = 3
-          Width = 272
+          Width = 156
           Height = 16
           Align = alTop
           Caption = 'WAD File &Text (if available)'
-          ExplicitWidth = 156
         end
         object mmoWADText: TMemo
           AlignWithMargins = True

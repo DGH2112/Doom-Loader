@@ -3,8 +3,8 @@
   This module contains simple types for use in the application.
 
   @Author  David Hoyle
-  @Version 1.141
-  @Date    02 Jun 2023
+  @Version 1.163
+  @Date    03 Jun 2023
   
   @license
 
@@ -38,9 +38,13 @@ Type
   (** A set of the above options. **)
   TDLOptions = Set Of TDLOption;
 
+  (** This enumerate defines how the Extra Options are associated to the Games files or Engines. **)
+  TDLExtraOpsAssociation = (doaGameEngine, doaIWAD, doaPWAD);
+
   (** A record to encapsulate the above options (and more when they are added). **)
   TDLOptionsRecord = Record
-    FOptions : TDLOptions;
+    FOptions  : TDLOptions;
+    FExtraOps : TDLExtraOpsAssociation;
   End;
 
 Implementation

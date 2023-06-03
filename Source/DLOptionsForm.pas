@@ -3,8 +3,8 @@
   This module contains a class to represent a form for displaying the applications options.
 
   @Author  David Hoyle
-  @Version 1.232
-  @Date    02 Jun 2023
+  @Version 1.272
+  @Date    03 Jun 2023
   
   @license
 
@@ -55,6 +55,7 @@ Type
     pnlButtons: TPanel;
     btnOK: TBitBtn;
     btnCancel: TBitBtn;
+    rgpExtraOptions: TRadioGroup;
   Strict Private
   Strict Protected
     Procedure InitialiseForm(Const Options : TDLOptionsRecord);
@@ -121,6 +122,7 @@ Begin
   For iOption := 0 To lbxOptions.Count - 1 Do
     If lbxOptions.Checked[iOption] Then
       Include(Options.FOptions, TDLOption(iOption));
+  Options.FExtraOps := TDLExtraOpsAssociation(rgpExtraOptions.ItemIndex);
 End;
 
 (**
@@ -138,6 +140,7 @@ Procedure TfrmDLOptions.InitialiseForm(Const Options: TDLOptionsRecord);
 Var
   eOption : TDLOption;
   iIndex: Integer;
+  eExtraOp : TDLExtraOpsAssociation;
 
 Begin
   For eOption := Low(TDLOption) To High(TDLOption) Do
@@ -145,6 +148,9 @@ Begin
       iIndex := lbxOptions.Items.Add(astrOptionDescription[eOption]);
       lbxOptions.Checked[iIndex] := eOption In Options.FOptions;
     End;
+  For eExtraOp := Low(TDLExtraOpsAssociation) To High(TDLExtraOpsAssociation) Do
+    rgpExtraOptions.Items.Add(astrExtraOpsDescriptions[eExtraOp]);
+  rgpExtraOptions.ItemIndex := Integer(Options.FExtraOps);
 End;
 
 End.

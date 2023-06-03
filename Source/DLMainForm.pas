@@ -3,8 +3,8 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 13.501
-  @Date    02 Jun 2023
+  @Version 13.566
+  @Date    03 Jun 2023
 
   @license
 
@@ -195,6 +195,8 @@ Const
   iOptionsMenuID = 201;
   (** A constant to define the About Menu ID in the system menu. **)
   iAboutMenuID = 209;
+  (** A constant to define the INI Key for the extra command line parameters association. **)
+  strExtraOpsAssocINIKey = 'Extra Options Association';
 
 {$R *.dfm}
 
@@ -755,6 +757,8 @@ Begin
   For eOption := Low(TDLOption) To High(TDLOption) Do
     If FINIFile.ReadBool(strSetupINISection, GetEnumName(TypeInfo(TDLOption), Ord(eOption)), False) Then
       Include(FDLOptions.FOptions, eOption);
+  FDLOptions.FExtraOps := TDLExtraOpsAssociation(FINIFile.ReadInteger(strSetupINISection,
+    strExtraOpsAssocINIKey, Integer(doaGameEngine)));
 End;
 
 (**
@@ -1085,6 +1089,7 @@ Begin
   For eOption := Low(TDLOption) To High(TDLOption) Do
     FINIFile.WriteBool(strSetupINISection, GetEnumName(TypeInfo(TDLOption), Ord(eOption)),
       eOption In FDLOptions.FOptions);
+  FINIFile.WriteInteger(strSetupINISection, strExtraOpsAssocINIKey, Integer(FDLOptions.FExtraOps));
   If FINIFile.Modified Then
     FINIFile.UpdateFile;
 End;
