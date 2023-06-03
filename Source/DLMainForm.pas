@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 13.924
+  @Version 13.934
   @Date    03 Jun 2023
 
   @license
@@ -199,6 +199,7 @@ Const
   iAboutMenuID = 209;
   (** A constant to define the INI Key for the extra command line parameters association. **)
   strExtraOpsAssocINIKey = 'Extra Options Association';
+  (** A constant for the VCL Themes INI Key. **)
   strVCLStyleINIKey = 'VCLStyle';
 
 {$R *.dfm}
@@ -631,7 +632,6 @@ Begin
   LoadVersionInfo;
   LoadSettings;
   PopulateGameEngines;
-  PopulateWADs;
   UpdateLaunchBtn;
   LoadWADText(edtWADFolder.Text + '\' + FSelectedPWAD);
   AddSystemMenus();

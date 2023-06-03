@@ -3,8 +3,8 @@ object frmDLOptions: TfrmDLOptions
   Top = 0
   BorderStyle = bsDialog
   Caption = 'Doom Loader Options'
-  ClientHeight = 248
-  ClientWidth = 421
+  ClientHeight = 296
+  ClientWidth = 411
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -17,36 +17,49 @@ object frmDLOptions: TfrmDLOptions
     AlignWithMargins = True
     Left = 3
     Top = 3
-    Width = 415
+    Width = 405
     Height = 16
     Align = alTop
     Caption = '&Options'
     ExplicitWidth = 43
   end
+  object lblVCLTheme: TLabel
+    AlignWithMargins = True
+    Left = 3
+    Top = 213
+    Width = 405
+    Height = 16
+    Align = alBottom
+    Caption = 'VCL &Theme'
+    ExplicitLeft = 8
+    ExplicitTop = 313
+  end
   object lbxOptions: TCheckListBox
     AlignWithMargins = True
     Left = 3
     Top = 25
-    Width = 415
-    Height = 64
+    Width = 405
+    Height = 60
     Align = alClient
-    ItemHeight = 17
     TabOrder = 0
+    ExplicitWidth = 411
+    ExplicitHeight = 63
   end
   object pnlButtons: TPanel
     Left = 0
-    Top = 214
-    Width = 421
+    Top = 262
+    Width = 411
     Height = 34
     Align = alBottom
     BevelOuter = bvNone
     TabOrder = 1
-    ExplicitTop = 159
+    ExplicitLeft = -56
+    ExplicitTop = 301
     DesignSize = (
-      421
+      411
       34)
     object btnOK: TBitBtn
-      Left = 258
+      Left = 248
       Top = 4
       Width = 75
       Height = 25
@@ -54,10 +67,10 @@ object frmDLOptions: TfrmDLOptions
       Kind = bkOK
       NumGlyphs = 2
       TabOrder = 0
-      ExplicitLeft = 262
+      ExplicitLeft = 254
     end
     object btnCancel: TBitBtn
-      Left = 339
+      Left = 329
       Top = 4
       Width = 75
       Height = 25
@@ -65,19 +78,31 @@ object frmDLOptions: TfrmDLOptions
       Kind = bkCancel
       NumGlyphs = 2
       TabOrder = 1
-      ExplicitLeft = 343
+      ExplicitLeft = 335
     end
   end
   object rgpExtraOptions: TRadioGroup
     AlignWithMargins = True
     Left = 3
-    Top = 95
-    Width = 415
+    Top = 91
+    Width = 405
     Height = 116
     Align = alBottom
     Caption = '&Extra Options'
     TabOrder = 2
-    ExplicitTop = 96
-    ExplicitWidth = 419
+    ExplicitLeft = 8
+    ExplicitTop = 82
+  end
+  object cbxVCLThemes: TComboBox
+    AlignWithMargins = True
+    Left = 3
+    Top = 235
+    Width = 405
+    Height = 24
+    Align = alBottom
+    Style = csDropDownList
+    Sorted = True
+    TabOrder = 3
+    OnChange = cbxVCLThemesChange
   end
 end
