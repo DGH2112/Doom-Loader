@@ -1,5 +1,5 @@
-﻿Source/__history/
-__history/
+﻿__history/
+__recovery/
 *.exe
 *.~dsk
 *.dcu
@@ -7,3 +7,4 @@ __history/
 *.dsk
 *.identcache
 *.zip
+*.ini
