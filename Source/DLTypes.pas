@@ -3,7 +3,7 @@
   This module contains simple types for use in the application.
 
   @Author  David Hoyle
-  @Version 1.163
+  @Version 1.166
   @Date    03 Jun 2023
   
   @license

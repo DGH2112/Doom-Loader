@@ -3,8 +3,8 @@
   This module contains the project code for creating the application.
 
   @Author  David Hoyle
-  @Version 1.111
-  @Date    28 May 2023
+  @Version 1.115
+  @Date    03 Jun 2023
   
   @license
 
@@ -33,6 +33,8 @@ Program DoomLoader;
 
 uses
   Vcl.Forms,
+  Vcl.Themes,
+  Vcl.Styles,
   DLMainForm in 'Source\DLMainForm.pas' {frmDLMainForm},
   DLTypes in 'Source\DLTypes.pas',
   DLOptionsForm in 'Source\DLOptionsForm.pas' {frmDLOptions},
