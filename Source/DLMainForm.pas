@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 13.821
+  @Version 13.886
   @Date    03 Jun 2023
 
   @license
@@ -280,12 +280,16 @@ Procedure TfrmDLMainForm.btnAddClick(Sender: TObject);
 Const
   strItem = 'Item%4.4d';
 
+Var
+  strName : String;
+
 Begin
   If dlgOpen.Execute Then
     Begin
-      FGameEngines.AddPair(Format(strItem, [FGameEngines.Count]), dlgOpen.FileName);
-      FGameEngineNames.AddPair(Format(strItem, [FGameEngines.Count]), ExtractFileName(dlgOpen.FileName));
-      FSelectedGameEngine := dlgOpen.FileName;
+      strName := Format(strItem, [FGameEngines.Count]);
+      FGameEngines.AddPair(strName, dlgOpen.FileName);
+      FGameEngineNames.AddPair(strName, ExtractFileName(dlgOpen.FileName));
+      FSelectedGameEngine := strName;
       PopulateGameEngines;
       UpdateLaunchBtn;
     End;
@@ -371,7 +375,7 @@ Begin
   If dlgOpen.Execute Then
     Begin
       FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex] := dlgOpen.FileName;
-      FSelectedGameEngine := dlgOpen.FileName;
+      FSelectedGameEngine := FGameEngines.Names[lvGameEngines.ItemIndex];
       PopulateGameEngines;
       UpdateLaunchBtn;
     End;
@@ -909,7 +913,7 @@ End;
 Procedure TfrmDLMainForm.lvGameEnginesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
 
 Begin
-  FSelectedGameEngine := Item.SubItems[0];
+  FSelectedGameEngine := FGameEngines.Names[Item.Index];
   If FDLOptions.FExtraOps = doaGameEngine Then
     cbxExtraParams.Text := FAssociatedOptions.Values[Item.Caption];
   UpdateUpAndDownBtns;
@@ -963,7 +967,7 @@ Begin
         Item := lvGameEngines.Items.Add;
         Item.Caption := FGameEngineNames.ValueFromIndex[iGameEngine];
         Item.SubItems.Add(FGameEngines.ValueFromIndex[iGameEngine]);
-        If CompareText(FSelectedGameEngine, Item.SubItems[0]) = 0 Then
+        If CompareText(FSelectedGameEngine, FGameEngines.Names[iGameEngine]) = 0 Then
           Item.Selected := True;
       End;
   Finally
