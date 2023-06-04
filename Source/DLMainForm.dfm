@@ -16,6 +16,7 @@ object frmDLMainForm: TfrmDLMainForm
   Position = poDesigned
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  OnShow = FormShow
   TextHeight = 16
   object lblGameEngines: TLabel
     AlignWithMargins = True

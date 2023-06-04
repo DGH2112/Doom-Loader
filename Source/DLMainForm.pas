@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 14.187
+  @Version 14.234
   @Date    04 Jun 2023
 
   @license
@@ -93,6 +93,7 @@ Type
     procedure edtWADFolderChange(Sender: TObject);
     Procedure FormDestroy(Sender: TObject);
     Procedure FormCreate(Sender: TObject);
+    procedure FormShow(Sender: TObject);
     procedure lvGameEnginesEdited(Sender: TObject; Item: TListItem; var S: string);
     procedure tvIWADsClick(Sender: TObject);
     procedure tvPWADsClick(Sender: TObject);
@@ -634,7 +635,6 @@ Begin
   LoadVersionInfo;
   LoadSettings;
   PopulateGameEngines;
-  UpdateLaunchBtn;
   LoadWADText(edtWADFolder.Text + '\' + FSelectedPWAD);
   AddSystemMenus();
 End;
@@ -660,6 +660,22 @@ Begin
   FGameEngineNames.Free;
   FGameEngines.Free;
   FINIFile.Free;
+End;
+
+(**
+
+  This is an on show event handler for the main form.
+
+  @precon  None.
+  @postcon Updates the launch button status when the form appears.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.FormShow(Sender: TObject);
+
+Begin
+  UpdateLaunchBtn;
 End;
 
 (**
