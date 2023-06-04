@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 14.186
+  @Version 14.187
   @Date    04 Jun 2023
 
   @license
