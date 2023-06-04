@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 13.982
+  @Version 14.186
   @Date    04 Jun 2023
 
   @license
@@ -107,8 +107,10 @@ Type
     FSelectedPWAD       : String;
     FIWADExceptions     : TStringList;
     FAssociatedIWAD     : TStringList;
+    FAssociatedPWAD     : TStringList;
     FAssociatedOptions  : TStringList;
     FDLOptions          : TDLOptionsRecord;
+    procedure SaveSelections;
   Strict Protected
     Procedure LoadSettings;
     Procedure SaveSettings;
@@ -185,6 +187,8 @@ Const
   strIWADExceptions = 'IWAD Exceptions';
   (** A constant to define the INI section for the list of IWAD associated with a PWAD. **)
   strAsscoiatedIWADs = 'Associated IWADs';
+  (** A constant to define the INI section for the list of PWAD associated with a Game Engine. **)
+  strAsscoiatedPWADs = 'Associated PWADs';
   (** A constant to define the INI section for the list of Extra Options. **)
   strExtraOptionsINISection = 'Extra Options';
   (** A constant to define the INI section for the list of Associated Options. **)
@@ -418,11 +422,7 @@ Begin
     Exit;
   If dloPauseMedia In FDLOptions.FOptions Then
     PlayPauseMedia();
-  // Save Associated IWAD
-  If Assigned(tvPWADs.Selected) Then
-    FAssociatedIWAD.Values[TreePath(tvPWADs.Selected)] := FSelectedIWAD;
-  // Save Extra Options to the dropdown list
-  SaveExtraOptions();
+  SaveSelections();
   // Launch the game engine with IWAD and optional PWAD
   strParams := Format('"%s"', [FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]]);
   If CompareText(FSelectedIWAD, strNone) <> 0 Then
@@ -629,6 +629,7 @@ Begin
   FIWADExceptions.Duplicates := dupIgnore;
   FIWADExceptions.Add(strHEXDDWAD);
   FAssociatedIWAD := TStringList.Create;
+  FAssociatedPWAD := TStringList.Create;
   FAssociatedOptions := TStringList.Create;
   LoadVersionInfo;
   LoadSettings;
@@ -653,6 +654,7 @@ Procedure TfrmDLMainForm.FormDestroy(Sender: TObject);
 Begin
   SaveSettings;
   FAssociatedOptions.Free;
+  FAssociatedPWAD.Free;
   FAssociatedIWAD.Free;
   FIWADExceptions.Free;
   FGameEngineNames.Free;
@@ -742,6 +744,9 @@ Begin
     FINIFile.ReadSection(strAsscoiatedIWADs, sl);
     For strItem In sl Do
       FAssociatedIWAD.AddPair(strItem, FINIFile.ReadString(strAsscoiatedIWADs, strItem, ''));
+    FINIFile.ReadSection(strAsscoiatedPWADs, sl);
+    For strItem In sl Do
+      FAssociatedPWAD.AddPair(strItem, FINIFile.ReadString(strAsscoiatedPWADs, strItem, ''));
     FINIFile.ReadSection(strExtraOptionsINISection, sl);
     For strItem In sl Do
       cbxExtraParams.Items.Add(FINIFile.ReadString(strExtraOptionsINISection, strItem, ''));
@@ -916,8 +921,17 @@ End;
 **)
 Procedure TfrmDLMainForm.lvGameEnginesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
 
+Var
+  Node: TTreeNode;
+
 Begin
   FSelectedGameEngine := FGameEngines.Names[Item.Index];
+  Node := Find(tvPWADs, Nil, FAssociatedPWAD.Values[Item.Caption]);
+  If Assigned(Node) Then
+    Begin
+      Node.Selected := True;
+      tvPWADsClick(Sender);
+    End;
   If FDLOptions.FExtraOps = doaGameEngine Then
     cbxExtraParams.Text := FAssociatedOptions.Values[Item.Caption];
   UpdateUpAndDownBtns;
@@ -1083,6 +1097,26 @@ End;
 
 (**
 
+  This method saves the various selection on Launching the Game Engine.
+
+  @precon  None.
+  @postcon The various selections are saved.
+
+**)
+Procedure TfrmDLMainForm.SaveSelections;
+
+Begin
+  // Save Associated IWAD associated with the PWAD
+  If Assigned(tvPWADs.Selected) Then
+    FAssociatedIWAD.Values[TreePath(tvPWADs.Selected)] := FSelectedIWAD;
+  // Save the associated PWAD with the selected Game Engine
+  FAssociatedPWAD.Values[lvGameEngines.Selected.Caption] := FSelectedPWAD;
+  // Save Extra Options to the dropdown list
+  SaveExtraOptions();
+End;
+
+(**
+
   This method saves the applications settings.
 
   @precon  None.
@@ -1121,6 +1155,9 @@ Begin
   FINIFile.EraseSection(strAsscoiatedIWADs);
   For i := 0 To FAssociatedIWAD.Count - 1 Do
     FINIFile.WriteString(strAsscoiatedIWADs, FAssociatedIWAD.Names[i], FAssociatedIWAD.ValueFromIndex[i]);
+  FINIFile.EraseSection(strAsscoiatedPWADs);
+  For i := 0 To FAssociatedPWAD.Count - 1 Do
+    FINIFile.WriteString(strAsscoiatedPWADs, FAssociatedPWAD.Names[i], FAssociatedPWAD.ValueFromIndex[i]);
   FINIFile.EraseSection(strExtraOptionsINISection);
   For i := 0 To cbxExtraParams.Items.Count - 1 Do
     FINIFile.WriteString(strExtraOptionsINISection, Format(strItem, [i]), cbxExtraParams.Items[i]);
