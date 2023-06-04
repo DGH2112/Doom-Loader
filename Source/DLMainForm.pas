@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 13.980
+  @Version 13.981
   @Date    04 Jun 2023
 
   @license
@@ -1181,7 +1181,7 @@ Procedure TfrmDLMainForm.tvIWADsClick(Sender: TObject);
 Begin
   FSelectedIWAD := TreePath(tvIWADs.Selected);
   // Update Extra Options
-  If FDLOptions.FExtraOps = doaGameEngine Then
+  If FDLOptions.FExtraOps = doaIWAD Then
     cbxExtraParams.Text := FAssociatedOptions.Values[FSelectedIWAD];
   // Update Launch button
   UpdateLaunchBtn;
@@ -1210,7 +1210,7 @@ Var
 Begin
   FSelectedPWAD := TreePath(tvPWADs.Selected);
   // Update Extra Options
-  If FDLOptions.FExtraOps = doaGameEngine Then
+  If FDLOptions.FExtraOps = doaPWAD Then
     cbxExtraParams.Text := FAssociatedOptions.Values[FSelectedPWAD];
   // Update associated IWAD
   strIWAD := FAssociatedIWAD.Values[FSelectedPWAD];
