@@ -31,8 +31,7 @@ object frmDLOptions: TfrmDLOptions
     Height = 16
     Align = alBottom
     Caption = 'VCL &Theme'
-    ExplicitLeft = 8
-    ExplicitTop = 313
+    ExplicitWidth = 66
   end
   object lbxOptions: TCheckListBox
     AlignWithMargins = True
@@ -42,8 +41,6 @@ object frmDLOptions: TfrmDLOptions
     Height = 60
     Align = alClient
     TabOrder = 0
-    ExplicitWidth = 411
-    ExplicitHeight = 63
   end
   object pnlButtons: TPanel
     Left = 0

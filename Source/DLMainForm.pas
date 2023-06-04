@@ -3,8 +3,8 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 13.934
-  @Date    03 Jun 2023
+  @Version 13.980
+  @Date    04 Jun 2023
 
   @license
 
@@ -527,7 +527,8 @@ End;
 Procedure TfrmDLMainForm.DisplayOptions;
 
 Begin
-  TfrmDLOptions.Execute(FDLOptions);
+  If TfrmDLOptions.Execute(FDLOptions) Then
+    AddSystemMenus;
 End;
 
 (**

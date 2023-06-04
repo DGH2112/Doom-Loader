@@ -3,8 +3,8 @@
   This module contains a class to represent a form for displaying the applications options.
 
   @Author  David Hoyle
-  @Version 1.353
-  @Date    03 Jun 2023
+  @Version 1.436
+  @Date    04 Jun 2023
   
   @license
 
@@ -60,9 +60,10 @@ Type
     cbxVCLThemes: TComboBox;
     procedure cbxVCLThemesChange(Sender: TObject);
   Strict Private
+    FLastStyleName : String;
   Strict Protected
     Procedure InitialiseForm(Const Options : TDLOptionsRecord);
-    Procedure FinaliseForm(Var Options : TDLOptionsRecord);
+    Function  FinaliseForm(Var Options : TDLOptionsRecord) : Boolean;
   Public
     Class Function Execute(Var Options : TDLOptionsRecord) : Boolean;
   End;
@@ -113,10 +114,7 @@ Begin
   Try
     F.InitialiseForm(Options);
     If F.ShowModal = mrOK Then
-      Begin
-        F.FinaliseForm(Options);
-        Result := True;
-      End;
+      Result := F.FinaliseForm(Options);
   Finally
     F.Free;
   End;
@@ -130,9 +128,10 @@ End;
   @postcon The passed options record is updated.
 
   @param   Options as a TDLOptionsRecord as a reference
+  @return  a Boolean
 
 **)
-Procedure TfrmDLOptions.FinaliseForm(Var Options: TDLOptionsRecord);
+Function TfrmDLOptions.FinaliseForm(Var Options: TDLOptionsRecord) : Boolean;
 
 Var
   iOption : Integer;
@@ -143,6 +142,7 @@ Begin
     If lbxOptions.Checked[iOption] Then
       Include(Options.FOptions, TDLOption(iOption));
   Options.FExtraOps := TDLExtraOpsAssociation(rgpExtraOptions.ItemIndex);
+  Result := CompareText(FLastStyleName, StyleServices.Name) <> 0;
 End;
 
 (**
@@ -164,6 +164,7 @@ Var
   strStyle: String;
 
 Begin
+  FLastStyleName := StyleServices.Name;
   For eOption := Low(TDLOption) To High(TDLOption) Do
     Begin
       iIndex := lbxOptions.Items.Add(astrOptionDescription[eOption]);
