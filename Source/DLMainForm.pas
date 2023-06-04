@@ -3,7 +3,7 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 13.981
+  @Version 13.982
   @Date    04 Jun 2023
 
   @license
@@ -752,9 +752,9 @@ Begin
     sl.Free;
   End;
   FSelectedGameEngine := FINIFile.ReadString(strSetupINISection, strSelectGameEngineINIKey, '');
-  edtWADFolder.Text := FINIFile.ReadString(strSetupINISection, strWADFolderINIKey, '');
   FSelectedIWAD := FINIFile.ReadString(strSetupINISection, strSelectedIWADINIKey, '');
   FSelectedPWAD := FINIFile.ReadString(strSetupINISection, strSelectedPWADINIKey, '');
+  edtWADFolder.Text := FINIFile.ReadString(strSetupINISection, strWADFolderINIKey, '');
   cbxExtraParams.Text := FINIFile.ReadString(strSetupINISection, strExtraParamsINIKey, '');
   lvGameEngines.Columns[0].Width := FINIFile.ReadInteger(strSetupINISection, strGameEngineNameWidthINIKey,
     lvGameEngines.Columns[0].Width);
