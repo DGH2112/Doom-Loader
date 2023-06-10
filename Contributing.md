@@ -64,4 +64,4 @@ as a **Win32** only project with **Debug** and **Release** configurations.
 
 regards
 
-David Hoyle May 2023.
+David Hoyle Jun 2023.

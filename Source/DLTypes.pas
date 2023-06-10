@@ -1,10 +1,10 @@
 (**
   
-  This module contains the project code for creating the application.
+  This module contains simple types for use in the application.
 
   @Author  David Hoyle
-  @Version 1.116
-  @Date    10 Jun 2023
+  @Version 1.166
+  @Date    03 Jun 2023
   
   @license
 
@@ -27,28 +27,26 @@
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 **)
-Program DoomLoader;
+Unit DLTypes;
 
-{$R 'DoomLoaderITHVerInfo.res' 'DoomLoaderITHVerInfo.RC'}
+Interface
 
-uses
-  Vcl.Forms,
-  Vcl.Themes,
-  Vcl.Styles,
-  DLMainForm in 'Source\DLMainForm.pas' {frmDLMainForm},
-  DLTypes in 'Source\DLTypes.pas',
-  DLOptionsForm in 'Source\DLOptionsForm.pas' {frmDLOptions},
-  DLConstants in 'Source\DLConstants.pas';
+Type
+  (** An enumerate to define the boolean options for the application. **)
+  TDLOption = (dloPauseMedia, dloStartMedia);
 
-{$R *.res}
+  (** A set of the above options. **)
+  TDLOptions = Set Of TDLOption;
 
+  (** This enumerate defines how the Extra Options are associated to the Games files or Engines. **)
+  TDLExtraOpsAssociation = (doaGameEngine, doaIWAD, doaPWAD);
 
-Begin
-  ReportMemoryLeaksOnShutdown := True;
-  Application.Initialize;
-  Application.MainFormOnTaskbar := True;
-  Application.Title := 'Doom Loader';
-  Application.CreateForm(TfrmDLMainForm, frmDLMainForm);
-  Application.Run;
+  (** A record to encapsulate the above options (and more when they are added). **)
+  TDLOptionsRecord = Record
+    FOptions  : TDLOptions;
+    FExtraOps : TDLExtraOpsAssociation;
+  End;
+
+Implementation
 
 End.

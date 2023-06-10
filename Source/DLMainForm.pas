@@ -3,8 +3,8 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 12.129
-  @Date    20 May 2023
+  @Version 14.234
+  @Date    04 Jun 2023
 
   @license
 
@@ -31,7 +31,7 @@ Unit DLMainForm;
 
 Interface
 
-Uses
+uses
   System.SysUtils,
   System.Variants,
   System.Classes,
@@ -45,7 +45,8 @@ Uses
   Vcl.ExtCtrls,
   Vcl.StdCtrls,
   Vcl.ComCtrls,
-  Vcl.Buttons;
+  Vcl.Buttons,
+  DLTypes;
 
 Type
   (** A form to represent the applications main interface. **)
@@ -75,14 +76,25 @@ Type
     tvIWADs: TTreeView;
     tvPWADs: TTreeView;
     cbxExtraParams: TComboBox;
+    pnlText: TPanel;
+    lblWADText: TLabel;
+    mmoWADText: TMemo;
+    btnUp: TBitBtn;
+    btnDown: TBitBtn;
+    dlgTask: TTaskDialog;
     procedure btnAddClick(Sender: TObject);
     procedure btnBrowseClick(Sender: TObject);
     procedure btnDeleteClick(Sender: TObject);
+    procedure btnDownClick(Sender: TObject);
     procedure btnEditClick(Sender: TObject);
     procedure btnLaunchClick(Sender: TObject);
+    procedure btnUpClick(Sender: TObject);
+    procedure dlgTaskHyperlinkClicked(Sender: TObject);
     procedure edtWADFolderChange(Sender: TObject);
     Procedure FormDestroy(Sender: TObject);
     Procedure FormCreate(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure lvGameEnginesEdited(Sender: TObject; Item: TListItem; var S: string);
     procedure tvIWADsClick(Sender: TObject);
     procedure tvPWADsClick(Sender: TObject);
     procedure lvGameEnginesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
@@ -90,12 +102,16 @@ Type
     FINIFileName        : String;
     FINIFile            : TMemINIFile;
     FGameEngines        : TStringList;
+    FGameEngineNames    : TStringList;
     FSelectedGameEngine : String;
     FSelectedIWAD       : String;
     FSelectedPWAD       : String;
     FIWADExceptions     : TStringList;
     FAssociatedIWAD     : TStringList;
+    FAssociatedPWAD     : TStringList;
     FAssociatedOptions  : TStringList;
+    FDLOptions          : TDLOptionsRecord;
+    procedure SaveSelections;
   Strict Protected
     Procedure LoadSettings;
     Procedure SaveSettings;
@@ -109,6 +125,14 @@ Type
     Function  TreePath(Const Node : TTreeNode) : String;
     Function  Find(Const TreeView : TTreeView; Const Node : TTreeNode;
       Const strFileNamePart : String) : TTreeNode;
+    Procedure LoadWADText(Const strWADFileName  :String);
+    Procedure UpdateUpAndDownBtns();
+    Procedure AddSystemMenus();
+    Procedure WMSysCommand(Var Msg : TWMSysCommand); Message WM_SYSCOMMAND; 
+    Procedure DisplayAboutBox();
+    Procedure PlayPauseMedia();
+    Procedure DisplayOptions();
+    Procedure SaveExtraOptions();
   Public
   End;
 
@@ -125,8 +149,11 @@ uses
   System.IOUtils,
   System.StrUtils,
   System.UITypes,
+  System.TypInfo,
   Winapi.ShellAPI,
-  Vcl.FileCtrl;
+  Vcl.FileCtrl,
+  Vcl.Themes,
+  DLOptionsForm;
 
 Const
   (** A constant to define the INI Section for the positional date of the application. **)
@@ -141,6 +168,8 @@ Const
   strHeightINIKey = 'Height';
   (** A constant to define the INI Section for the list of Game Engines. **)
   strGameEnginesINISection = 'Game Engines';
+  (** A constant to define the INI Section for the list of Game Engine Names. **)
+  strGameEngineNamesINISection = 'Game Engine Names';
   (** A constant to define the splitter height of the Game Engine section. **)
   strSplitterHeightINIKey = 'SplitterHeight';
   (** A constant to define the selected Game Engine. **)
@@ -159,13 +188,52 @@ Const
   strIWADExceptions = 'IWAD Exceptions';
   (** A constant to define the INI section for the list of IWAD associated with a PWAD. **)
   strAsscoiatedIWADs = 'Associated IWADs';
+  (** A constant to define the INI section for the list of PWAD associated with a Game Engine. **)
+  strAsscoiatedPWADs = 'Associated PWADs';
   (** A constant to define the INI section for the list of Extra Options. **)
   strExtraOptionsINISection = 'Extra Options';
   (** A constant to define the INI section for the list of Associated Options. **)
   strAssociatedOptionsINISection = 'Associated Options';
+  (** A resource string for no WAD file. **)
+  strNone = '(none)';
+  (** A constant to define the game engine name with INI Key. **)
+  strGameEngineNameWidthINIKey = 'Game Engine Name Width';
+  (** A constant to define the Options Menu ID in the system menu. **)
+  iOptionsMenuID = 201;
+  (** A constant to define the About Menu ID in the system menu. **)
+  iAboutMenuID = 209;
+  (** A constant to define the INI Key for the extra command line parameters association. **)
+  strExtraOpsAssocINIKey = 'Extra Options Association';
+  (** A constant for the VCL Themes INI Key. **)
+  strVCLStyleINIKey = 'VCLStyle';
 
 {$R *.dfm}
 
+
+(**
+
+  This method adds menu items to the system menu.
+
+  @precon  None.
+  @postcon The menus are added.
+
+**)
+Procedure TfrmDLMainForm.AddSystemMenus;
+
+ResourceString
+  strAbout = '&About...';
+  strOptions = '&Options...';
+
+var
+  SystemMenu: HMENU;
+  
+Begin
+  SystemMenu := GetSystemMenu(Handle, False);
+  AppendMenu(SystemMenu, MF_SEPARATOR, 0, Nil);
+  AppendMenu(SystemMenu, MF_STRING, iOptionsMenuID, PChar(strOptions));
+  AppendMenu(SystemMenu, MF_SEPARATOR, 0, Nil);
+  AppendMenu(SystemMenu, MF_STRING, iAboutMenuID, PChar(strAbout));
+End;
 
 (**
 
@@ -220,11 +288,16 @@ Procedure TfrmDLMainForm.btnAddClick(Sender: TObject);
 Const
   strItem = 'Item%4.4d';
 
+Var
+  strName : String;
+
 Begin
   If dlgOpen.Execute Then
     Begin
-      FGameEngines.AddPair(Format(strItem, [FGameEngines.Count]), dlgOpen.FileName);
-      FSelectedGameEngine := ExtractFileName(dlgOpen.FileName);
+      strName := Format(strItem, [FGameEngines.Count]);
+      FGameEngines.AddPair(strName, dlgOpen.FileName);
+      FGameEngineNames.AddPair(strName, ExtractFileName(dlgOpen.FileName));
+      FSelectedGameEngine := strName;
       PopulateGameEngines;
       UpdateLaunchBtn;
     End;
@@ -267,8 +340,27 @@ Begin
   If lvGameEngines.ItemIndex = - 1 Then
     Exit;
   FGameEngines.Delete(lvGameEngines.ItemIndex);
+  FGameEngineNames.Delete(lvGameEngines.ItemIndex);
   PopulateGameEngines;
   UpdateLaunchBtn;
+End;
+
+(**
+
+  This is an on click event handler for the Down button.
+
+  @precon  None.
+  @postcon Move the selected game engine down the list.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.btnDownClick(Sender: TObject);
+
+Begin
+  FGameEngines.Exchange(lvGameEngines.ItemIndex, lvGameEngines.ItemIndex + 1);
+  FGameEngineNames.Exchange(lvGameEngines.ItemIndex, lvGameEngines.ItemIndex + 1);
+  PopulateGameEngines;
 End;
 
 (**
@@ -290,8 +382,8 @@ Begin
   dlgOpen.FileName := ExtractFileName(FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]);
   If dlgOpen.Execute Then
     Begin
-      FGameEngines[lvGameEngines.ItemIndex] := dlgOpen.FileName;
-      FSelectedGameEngine := ExtractFileName(dlgOpen.FileName);
+      FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex] := dlgOpen.FileName;
+      FSelectedGameEngine := FGameEngines.Names[lvGameEngines.ItemIndex];
       PopulateGameEngines;
       UpdateLaunchBtn;
     End;
@@ -312,15 +404,14 @@ End;
 Procedure TfrmDLMainForm.btnLaunchClick(Sender: TObject);
 
 ResourceString
-  strExitCodeMsg = 'The process "%s" exited with error code %d';
+  strExitCodeMsg = 'The process ''%s'' exited with error code %d';
 
 Const
-  strIWADCmd = '-iwad "%s"';
-  strPWADCmd = '-file "%s"';
+  strIWADCmd = ' -iwad "%s"';
+  strPWADCmd = ' -file "%s"';
   iWaitInMilliSec = 100;
 
 Var
-  strGameEngine : String;
   strParams :String;
   strFolder : String;
   StartupInfo : TStartupInfo;
@@ -328,22 +419,23 @@ Var
   iExitCode : Cardinal;
  
 Begin
-  // Save Associated IWAD
-  If Assigned(tvPWADs.Selected) Then
-    FAssociatedIWAD.Values[TreePath(tvPWADs.Selected)] := FSelectedIWAD;
-  // Save Extra Options to the dropdown list
-  If Length(cbxExtraParams.Text) > 0 Then
-    Begin
-      If cbxExtraParams.Items.IndexOf(cbxExtraParams.Text) = -1 Then
-        cbxExtraParams.Items.Add(cbxExtraParams.Text);
-      //: @note Might want to have this configurable, i.e. IWAD, PWAD or Game Engine.
-      FAssociatedOptions.Values[FSelectedIWAD] := cbxExtraParams.Text;
-    End;
+  If lvGameEngines.IsEditing Then
+    Exit;
+  If dloPauseMedia In FDLOptions.FOptions Then
+    PlayPauseMedia();
+  SaveSelections();
   // Launch the game engine with IWAD and optional PWAD
-  strGameEngine := '"' + FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex] + '"';
-  strParams := Format(strIWADCmd, [edtWADFolder.Text + '\' + FSelectedIWAD]) +
-    IfThen(tvPWADs.SelectionCount > 0, Format(#32 + strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]), '') +
-    IfThen(Length(cbxExtraParams.Text) > 0, #32 + cbxExtraParams.Text, '');
+  strParams := Format('"%s"', [FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]]);
+  If CompareText(FSelectedIWAD, strNone) <> 0 Then
+    Begin
+      strParams := strParams + Format(strIWADCmd, [edtWADFolder.Text + '\' + FSelectedIWAD]);
+      strParams := strParams + IfThen(
+        (FSelectedPWAD.Length > 0) And (CompareText(FSelectedPWAD, strNone) <> 0),
+        Format(strPWADCmd, [edtWADFolder.Text + '\' + FSelectedPWAD]),
+        ''
+      );
+    End;
+  strParams := strParams + IfThen(Length(cbxExtraParams.Text) > 0, #32 + cbxExtraParams.Text, '');
   strFolder := ExtractFilePath(FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]);
   FillChar(StartupInfo, SizeOf(TStartupInfo), 0);
   StartupInfo.cb := SizeOf(TStartupInfo);
@@ -351,18 +443,112 @@ Begin
   StartupInfo.wShowWindow := SW_NORMAL;
   StartupInfo.hStdOutput  := 0;
   StartupInfo.hStdError   := 0;
-  Win32Check(CreateProcess(Nil, PChar(strGameEngine + #32 + strParams), Nil, Nil, False, 0, Nil,
+  Win32Check(CreateProcess(Nil, PChar(strParams), Nil, Nil, False, 0, Nil,
     PChar(strFolder), StartupInfo, ProcessInfo));
   Try
     While WaitforSingleObject(ProcessInfo.hProcess, iWaitInMilliSec) = WAIT_TIMEOUT Do;
     If GetExitCodeProcess(ProcessInfo.hProcess, iExitCode) Then
       If iExitCode > 0 Then
-        TaskMessageDlg(Application.Title, Format(strExitCodeMsg, [strGameEngine, iExitCode]), mtError,
+        TaskMessageDlg(Application.Title, Format(strExitCodeMsg, [strParams, iExitCode]), mtError,
           [mbOK], 0);
   Finally
     Win32Check(CloseHandle(ProcessInfo.hThread));
     Win32Check(CloseHandle(ProcessInfo.hProcess));
   End;
+  If dloStartMedia In FDLOptions.FOptions Then
+    PlayPauseMedia();
+End;
+
+(**
+
+  This is an on click event handler for the Up button.
+
+  @precon  None.
+  @postcon Moves the selected game engine up the list.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.btnUpClick(Sender: TObject);
+
+Begin
+  FGameEngines.Exchange(lvGameEngines.ItemIndex, lvGameEngines.ItemIndex - 1);
+  FGameEngineNames.Exchange(lvGameEngines.ItemIndex, lvGameEngines.ItemIndex - 1);
+  PopulateGameEngines;
+End;
+
+(**
+
+  This method displays the about dialogue with the GP3 licenses information.
+
+  @precon  None.
+  @postcon The GP3 license information is displayed.
+
+  @nospelling
+
+**)
+Procedure TfrmDLMainForm.DisplayAboutBox;
+
+ResourceString
+  strMsg =
+    'DOOM Loader is a simple application to allow you to select different DOOM ' +
+    'game engines, IWADs and PWADs in one single place.'#13#10 +
+    ''#13#10 +
+    'Copyright (C) 2023  David Hoyle ' + 
+    '(<a href="https://github.com/DGH2112/Doom-Loader/">https://github.com/DGH2112/Doom-Loader/</a>)'#13#10 +
+    ''#13#10 +
+    'This program is free software: you can redistribute it and/or modify ' +
+    'it under the terms of the GNU General Public License as published by ' +
+    'the Free Software Foundation, either version 3 of the License, or ' +
+    '(at your option) any later version.'#13#10 +
+    ''#13#10 +
+    'This program is distributed in the hope that it will be useful, ' +
+    'but WITHOUT ANY WARRANTY; without even the implied warranty of ' +
+    'MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the ' +
+    'GNU General Public License for more details.'#13#10 +
+    ''#13#10 +
+    'You should have received a copy of the GNU General Public License' +
+    'along with this program.  If not, see ' +
+    '<a href="https://www.gnu.org/licenses">https://www.gnu.org/licenses</a>.';
+
+Begin
+  dlgTask.Title := Application.Title;
+  dlgTask.Text := strMsg;
+  dlgTask.Execute(Handle);
+End;
+
+(**
+
+  This method displays the options form.
+
+  @precon  None.
+  @postcon The options for is displayed.
+
+**)
+Procedure TfrmDLMainForm.DisplayOptions;
+
+Begin
+  If TfrmDLOptions.Execute(FDLOptions) Then
+    AddSystemMenus;
+End;
+
+(**
+
+  This is an on hyper-link click event handler.
+
+  @precon  None.
+  @postcon Opens the URL that has been clicked.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.dlgTaskHyperlinkClicked(Sender: TObject);
+
+Const
+  strOpen = 'open';
+
+Begin
+  ShellExecute(Handle, strOpen, PChar(dlgTask.URL), Nil, Nil, SW_SHOWNORMAL);
 End;
 
 (**
@@ -437,18 +623,20 @@ Begin
   FINIFileName := TPath.GetHomePath + strSeasonFallDoomLoaderIni;
   FINIFile := TMemINIFile.Create(FINIFileName);
   FGameEngines := TStringList.Create;
+  FGameEngineNames := TStringList.Create;
   FIWADExceptions := TStringList.Create;
   FIWADExceptions.Sorted := True;
   FIWADExceptions.CaseSensitive := False;
   FIWADExceptions.Duplicates := dupIgnore;
   FIWADExceptions.Add(strHEXDDWAD);
   FAssociatedIWAD := TStringList.Create;
+  FAssociatedPWAD := TStringList.Create;
   FAssociatedOptions := TStringList.Create;
   LoadVersionInfo;
   LoadSettings;
   PopulateGameEngines;
-  PopulateWADs;
-  UpdateLaunchBtn;
+  LoadWADText(edtWADFolder.Text + '\' + FSelectedPWAD);
+  AddSystemMenus();
 End;
 
 (**
@@ -466,10 +654,28 @@ Procedure TfrmDLMainForm.FormDestroy(Sender: TObject);
 Begin
   SaveSettings;
   FAssociatedOptions.Free;
+  FAssociatedPWAD.Free;
   FAssociatedIWAD.Free;
   FIWADExceptions.Free;
+  FGameEngineNames.Free;
   FGameEngines.Free;
   FINIFile.Free;
+End;
+
+(**
+
+  This is an on show event handler for the main form.
+
+  @precon  None.
+  @postcon Updates the launch button status when the form appears.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.FormShow(Sender: TObject);
+
+Begin
+  UpdateLaunchBtn;
 End;
 
 (**
@@ -529,6 +735,7 @@ Procedure TfrmDLMainForm.LoadSettings;
 Var
   sl : TStringList;
   strItem: String;
+  eOption: TDLOption;
 
 Begin
   Top := FINIFile.ReadInteger(strPositionINISection, strTopINIKey, Top);
@@ -541,13 +748,21 @@ Begin
   Try
     FINIFile.ReadSection(strGameEnginesINISection, sl);
     For strItem In sl Do
-      FGameEngines.AddPair(strItem, FINIFile.ReadString(strGameEnginesINISection, strItem, ''));
+      Begin
+        FGameEngines.AddPair(strItem, FINIFile.ReadString(strGameEnginesINISection, strItem, ''));
+        FGameEngineNames.AddPair(strItem, FINIFile.ReadString(strGameEngineNamesINISection, strItem,
+           // Default is the Game Engine Name
+          ExtractFileName(FINIFile.ReadString(strGameEnginesINISection, strItem, ''))));
+      End;
     FINIFile.ReadSection(strIWADExceptions, sl);
     For strItem In sl Do
       FIWADExceptions.Add(strItem);
     FINIFile.ReadSection(strAsscoiatedIWADs, sl);
     For strItem In sl Do
       FAssociatedIWAD.AddPair(strItem, FINIFile.ReadString(strAsscoiatedIWADs, strItem, ''));
+    FINIFile.ReadSection(strAsscoiatedPWADs, sl);
+    For strItem In sl Do
+      FAssociatedPWAD.AddPair(strItem, FINIFile.ReadString(strAsscoiatedPWADs, strItem, ''));
     FINIFile.ReadSection(strExtraOptionsINISection, sl);
     For strItem In sl Do
       cbxExtraParams.Items.Add(FINIFile.ReadString(strExtraOptionsINISection, strItem, ''));
@@ -558,10 +773,18 @@ Begin
     sl.Free;
   End;
   FSelectedGameEngine := FINIFile.ReadString(strSetupINISection, strSelectGameEngineINIKey, '');
-  edtWADFolder.Text := FINIFile.ReadString(strSetupINISection, strWADFolderINIKey, '');
   FSelectedIWAD := FINIFile.ReadString(strSetupINISection, strSelectedIWADINIKey, '');
   FSelectedPWAD := FINIFile.ReadString(strSetupINISection, strSelectedPWADINIKey, '');
+  edtWADFolder.Text := FINIFile.ReadString(strSetupINISection, strWADFolderINIKey, '');
   cbxExtraParams.Text := FINIFile.ReadString(strSetupINISection, strExtraParamsINIKey, '');
+  lvGameEngines.Columns[0].Width := FINIFile.ReadInteger(strSetupINISection, strGameEngineNameWidthINIKey,
+    lvGameEngines.Columns[0].Width);
+  For eOption := Low(TDLOption) To High(TDLOption) Do
+    If FINIFile.ReadBool(strSetupINISection, GetEnumName(TypeInfo(TDLOption), Ord(eOption)), False) Then
+      Include(FDLOptions.FOptions, eOption);
+  FDLOptions.FExtraOps := TDLExtraOpsAssociation(FINIFile.ReadInteger(strSetupINISection,
+    strExtraOpsAssocINIKey, Integer(doaGameEngine)));
+  TStyleManager.TrySetStyle(FINIFile.ReadString(strSetupINISection, strVCLStyleINIKey, StyleServices.Name));
 End;
 
 (**
@@ -640,6 +863,67 @@ End;
 
 (**
 
+  This method attempts to load the text file that is associated with the WAD file (same name but ending
+  in TXT). If found it is loaded for displayed else a message is displayed saying a text file cannot be
+  found.
+
+  @precon  None.
+  @postcon The text file is displayed if found.
+
+  @param   strWADFileName as a String as a constant
+
+**)
+Procedure TfrmDLMainForm.LoadWADText(Const strWADFileName: String);
+
+ResourceString
+  strNoAssociatedTextFound = 'No associated text found!';
+
+Const
+  strTxtExt = '.txt';
+
+Var
+  strTxtFileName : String;
+  
+Begin
+  strTxtFileName := ChangeFileExt(strWADFileName, strTxtExt);
+  If FileExists(strTxtFileName) Then
+    mmoWADText.Lines.LoadFromFile(strTxtFileName)
+  Else
+    mmoWADText.Lines.Text := strNoAssociatedTextFound;
+End;
+
+(**
+
+  This is an on edited event handler for the Game Engines list view.
+
+  @precon  None.
+  @postcon Updates the game engine name based on the edited text.
+
+  @param   Sender as a TObject
+  @param   Item   as a TListItem
+  @param   S      as a String as a reference
+
+**)
+Procedure TfrmDLMainForm.lvGameEnginesEdited(Sender: TObject; Item: TListItem; Var S: String);
+
+Var
+  iIndex: Integer;
+  strExtraOps: String;
+
+Begin
+  If FDLOptions.FExtraOps = doaGameEngine Then
+    Begin
+      strExtraOps := FAssociatedOptions.Values[Item.Caption];
+      FAssociatedOptions.Values[S] := strExtraOps;
+      iIndex := FAssociatedOptions.IndexOfName(Item.Caption);
+      If iIndex > -1 Then
+        FAssociatedOptions.Delete(iIndex);
+    End;
+  FGameEngineNames.ValueFromIndex[lvGameEngines.ItemIndex] := S;
+End;
+
+(**
+
   This is an on select item event handler for the Game Engine list view.
 
   @precon  None.
@@ -653,9 +937,45 @@ End;
 **)
 Procedure TfrmDLMainForm.lvGameEnginesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
 
+Var
+  Node: TTreeNode;
+
 Begin
-  FSelectedGameEngine := Item.Caption;
+  FSelectedGameEngine := FGameEngines.Names[Item.Index];
+  Node := Find(tvPWADs, Nil, FAssociatedPWAD.Values[Item.Caption]);
+  If Assigned(Node) Then
+    Begin
+      Node.Selected := True;
+      tvPWADsClick(Sender);
+    End;
+  If FDLOptions.FExtraOps = doaGameEngine Then
+    cbxExtraParams.Text := FAssociatedOptions.Values[Item.Caption];
+  UpdateUpAndDownBtns;
   UpdateLaunchBtn;
+End;
+
+(**
+
+  This method simulates the pressing of the Play/Pause button on the keyboard to start and stop the
+  systems currently active media player.
+
+  @precon  None.
+  @postcon starts or pauses the currently playing music.
+
+**)
+Procedure TfrmDLMainForm.PlayPauseMedia;
+
+Var
+  recInput : Array[0..1] Of TInput;
+  
+Begin
+  ZeroMemory(@recInput, SizeOf(recInput));
+  recInput[0].Itype := INPUT_KEYBOARD;
+  recInput[0].ki.wVk := VK_MEDIA_PLAY_PAUSE;
+  recInput[1].Itype := INPUT_KEYBOARD;
+  recInput[1].ki.wVk := VK_MEDIA_PLAY_PAUSE;
+  recInput[1].ki.dwFlags := KEYEVENTF_KEYUP;
+  SendInput(Length(recInput), recInput[0], SizeOf(TINPUT));
 End;
 
 (**
@@ -679,9 +999,9 @@ Begin
     For iGameEngine := 0 To FGameEngines.Count - 1 Do
       Begin
         Item := lvGameEngines.Items.Add;
-        Item.Caption := ExtractFileName(FGameEngines.ValueFromIndex[iGameEngine]);
-        Item.SubItems.Add(ExtractFilePath(FGameEngines.ValueFromIndex[iGameEngine]));
-        If CompareText(FSelectedGameEngine, Item.Caption) = 0 Then
+        Item.Caption := FGameEngineNames.ValueFromIndex[iGameEngine];
+        Item.SubItems.Add(FGameEngines.ValueFromIndex[iGameEngine]);
+        If CompareText(FSelectedGameEngine, FGameEngines.Names[iGameEngine]) = 0 Then
           Item.Selected := True;
       End;
   Finally
@@ -699,15 +1019,14 @@ End;
 **)
 Procedure TfrmDLMainForm.PopulateWADs;
 
-Const
-  strNone = '(none)';
-
 Var
   Item: TTreeNode;
   
 Begin
   tvIWADs.Items.Clear;
   tvPWADs.Items.Clear;
+  Item := tvIWADs.Items.AddChild(Nil, strNone);
+  Item.Selected := CompareText(FSelectedIWAD, strNone) = 0;
   Item := tvPWADs.Items.AddChild(Nil, strNone);
   Item.Selected := CompareText(FSelectedPWAD, strNone) = 0;
   RecurseWADFolders(edtWADFolder.Text);
@@ -770,6 +1089,50 @@ End;
 
 (**
 
+  This method saves the extra options associations.
+
+  @precon  None.
+  @postcon The Extra Options Association are saved to either the Game Engine, IPAD or PWAD as per the
+           options.
+
+**)
+Procedure TfrmDLMainForm.SaveExtraOptions;
+
+Begin
+  If Length(cbxExtraParams.Text) > 0 Then
+    Begin
+      If cbxExtraParams.Items.IndexOf(cbxExtraParams.Text) = -1 Then
+        cbxExtraParams.Items.Add(cbxExtraParams.Text);
+      Case FDLOptions.FExtraOps Of
+        doaGameEngine: FAssociatedOptions.Values[lvGameEngines.Selected.Caption] := cbxExtraParams.Text;
+        doaIWAD: FAssociatedOptions.Values[FSelectedIWAD] := cbxExtraParams.Text;
+        doaPWAD: FAssociatedOptions.Values[FSelectedPWAD] := cbxExtraParams.Text;
+      End;
+    End;
+End;
+
+(**
+
+  This method saves the various selection on Launching the Game Engine.
+
+  @precon  None.
+  @postcon The various selections are saved.
+
+**)
+Procedure TfrmDLMainForm.SaveSelections;
+
+Begin
+  // Save Associated IWAD associated with the PWAD
+  If Assigned(tvPWADs.Selected) Then
+    FAssociatedIWAD.Values[TreePath(tvPWADs.Selected)] := FSelectedIWAD;
+  // Save the associated PWAD with the selected Game Engine
+  FAssociatedPWAD.Values[lvGameEngines.Selected.Caption] := FSelectedPWAD;
+  // Save Extra Options to the dropdown list
+  SaveExtraOptions();
+End;
+
+(**
+
   This method saves the applications settings.
 
   @precon  None.
@@ -783,6 +1146,7 @@ Const
 
 Var
   i: Integer;
+  eOption : TDLOption;
 
 Begin
   FINIFile.WriteInteger(strPositionINISection, strTopINIKey, Top);
@@ -793,6 +1157,9 @@ Begin
   FINIFile.EraseSection(strGameEnginesINISection);
   For i := 0 To FGameEngines.Count - 1 Do
     FINIFile.WriteString(strGameEnginesINISection, Format(strItem, [i]), FGameEngines.ValueFromIndex[i]);
+  FINIFile.EraseSection(strGameEngineNamesINISection);
+  For i := 0 To FGameEngineNames.Count - 1 Do
+    FINIFile.WriteString(strGameEngineNamesINISection, Format(strItem, [i]), FGameEngineNames.ValueFromIndex[i]);
   FINIFile.EraseSection(strIWADExceptions);
   For i := 0 To FIWADExceptions.Count - 1 Do
     FINIFile.WriteString(strIWADExceptions, FIWADExceptions[i], FIWADExceptions[i]);
@@ -804,6 +1171,9 @@ Begin
   FINIFile.EraseSection(strAsscoiatedIWADs);
   For i := 0 To FAssociatedIWAD.Count - 1 Do
     FINIFile.WriteString(strAsscoiatedIWADs, FAssociatedIWAD.Names[i], FAssociatedIWAD.ValueFromIndex[i]);
+  FINIFile.EraseSection(strAsscoiatedPWADs);
+  For i := 0 To FAssociatedPWAD.Count - 1 Do
+    FINIFile.WriteString(strAsscoiatedPWADs, FAssociatedPWAD.Names[i], FAssociatedPWAD.ValueFromIndex[i]);
   FINIFile.EraseSection(strExtraOptionsINISection);
   For i := 0 To cbxExtraParams.Items.Count - 1 Do
     FINIFile.WriteString(strExtraOptionsINISection, Format(strItem, [i]), cbxExtraParams.Items[i]);
@@ -811,6 +1181,12 @@ Begin
   For i := 0 To FAssociatedOptions.Count - 1 Do
     FINIFile.WriteString(strAssociatedOptionsINISection, FAssociatedOptions.Names[i],
       FAssociatedOptions.ValueFromIndex[i]);
+  FINIFile.WriteInteger(strSetupINISection, strGameEngineNameWidthINIKey, lvGameEngines.Columns[0].Width);
+  For eOption := Low(TDLOption) To High(TDLOption) Do
+    FINIFile.WriteBool(strSetupINISection, GetEnumName(TypeInfo(TDLOption), Ord(eOption)),
+      eOption In FDLOptions.FOptions);
+  FINIFile.WriteInteger(strSetupINISection, strExtraOpsAssocINIKey, Integer(FDLOptions.FExtraOps));
+  FINIFile.WriteString(strSetupINISection, strVCLStyleINIKey, StyleServices.Name);
   If FINIFile.Modified Then
     FINIFile.UpdateFile;
 End;
@@ -858,9 +1234,11 @@ Procedure TfrmDLMainForm.tvIWADsClick(Sender: TObject);
 Begin
   FSelectedIWAD := TreePath(tvIWADs.Selected);
   // Update Extra Options
-  cbxExtraParams.Text := FAssociatedOptions.Values[FSelectedIWAD];
+  If FDLOptions.FExtraOps = doaIWAD Then
+    cbxExtraParams.Text := FAssociatedOptions.Values[FSelectedIWAD];
   // Update Launch button
   UpdateLaunchBtn;
+  LoadWADText(edtWADFolder.Text + '\' + FSelectedIWAD);
 End;
 
 (**
@@ -884,6 +1262,9 @@ Var
   
 Begin
   FSelectedPWAD := TreePath(tvPWADs.Selected);
+  // Update Extra Options
+  If FDLOptions.FExtraOps = doaPWAD Then
+    cbxExtraParams.Text := FAssociatedOptions.Values[FSelectedPWAD];
   // Update associated IWAD
   strIWAD := FAssociatedIWAD.Values[FSelectedPWAD];
   astrFileName := strIWAD.Split(['\']);
@@ -895,9 +1276,13 @@ Begin
         ParentNode := Node;
     End;
   If Assigned(ParentNode) Then
-    ParentNode.Selected := True;
+    Begin
+      ParentNode.Selected := True;
+      FSelectedIWAD := strIWAD;
+    End;
   // Update Launch button
   UpdateLaunchBtn;
+  LoadWADText(edtWADFolder.Text + '\' + FSelectedPWAD);
 End;
 
 (**
@@ -916,6 +1301,41 @@ Begin
     (lvGameEngines.SelCount = 1) And
     (tvIWADs.SelectionCount > 0) And
     (tvPWADs.SelectionCount > 0);
+End;
+
+(**
+
+  This method enables/disables the up and down buttons depending upon which game engine is selected.
+
+  @precon  None.
+  @postcon The up and down buttons are enabled or disabled according to which game engine is selected.
+
+**)
+Procedure TfrmDLMainForm.UpdateUpAndDownBtns;
+
+Begin
+  btnUp.Enabled := lvGameEngines.ItemIndex > 0;
+  btnDown.Enabled := lvGameEngines.ItemIndex < FGameEngines.Count - 1;
+End;
+
+(**
+
+  This is a custom message handler for the WM_SYSCOMMAND windows message.
+
+  @precon  None.
+  @postcon Intercepts the new menus and invokes them.
+
+  @param   Msg as a TWMSysCommand as a reference
+
+**)
+Procedure TfrmDLMainForm.WMSysCommand(Var Msg: TWMSysCommand);
+
+Begin
+  Case Msg.CmdType Of
+    iAboutMenuID: DisplayAboutBox();
+    iOptionsMenuID : DisplayOptions();
+  End;
+  Inherited;
 End;
 
 End.

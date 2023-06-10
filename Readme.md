@@ -2,9 +2,9 @@
 
 Author:   David Hoyle
 
-Version:  1.0
+Version:  1.1
 
-Date:     23 May 2023
+Date:     10 Jun 2023
 
 Web Page: http://https://github.com/DGH2112/Doom-Loader
 
@@ -16,27 +16,7 @@ select various IWADs and optionally PWAD files.
 
 ## Use
 
-At the top of the application main window, you can configure multiple DOOM
-game engines with the Add, Edit and Delete buttons. Below this is an area
-where you can specify where all your WAD files are store (including in a
-hierarchical folder structure). When this is configured, IWADs and PWAD will
-be populated in the lower left and right panes respectivity. The application
-searches recursively for WAD files so you can organise them how you would
-like. Below these panes, there is an edit box for additional game options
-which you would like to pass to the gaming engine selected.
-
-There are occasion where an IWAD is actually a PWAD. HEXDD is one instance.
-The applications settings are store in an INI in your user roaming folder
-and you can edit this to add other exceptions if you come across them.
-Once configured, the IWAD will appear in the PWAD pane instance.
-
-The application will remember which IWADs have been associated with a PWAD
-and will automatically select that IWAD when a PWAD is selected. This
-selection is stored when the game engine is launched.
-
-Likewise, the extra options are remembered for each IWAD. I might make this
-configurable so it can be changed to be specific to a game engine, IWAD or
-IWAD. Again, this is stored when the game engine is launched.
+For how to use the application, please refer to the [Wiki](https://github.com/DGH2112/Doom-Loader/wiki).
 
 ## Current Limitations
 

@@ -13,8 +13,10 @@ object frmDLMainForm: TfrmDLMainForm
   Font.Height = -13
   Font.Name = 'Tahoma'
   Font.Style = []
+  Position = poDesigned
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  OnShow = FormShow
   TextHeight = 16
   object lblGameEngines: TLabel
     AlignWithMargins = True
@@ -30,13 +32,13 @@ object frmDLMainForm: TfrmDLMainForm
   object Splitter: TSplitter
     AlignWithMargins = True
     Left = 3
-    Top = 180
+    Top = 185
     Width = 622
     Height = 5
     Cursor = crVSplit
     Align = alTop
     AutoSnap = False
-    MinSize = 100
+    MinSize = 160
     ResizeStyle = rsUpdate
     ExplicitLeft = 0
     ExplicitTop = 177
@@ -46,7 +48,7 @@ object frmDLMainForm: TfrmDLMainForm
     Left = 0
     Top = 22
     Width = 628
-    Height = 155
+    Height = 160
     Align = alTop
     BevelOuter = bvNone
     TabOrder = 0
@@ -56,21 +58,23 @@ object frmDLMainForm: TfrmDLMainForm
       Left = 3
       Top = 3
       Width = 531
-      Height = 149
+      Height = 154
       Align = alClient
       Columns = <
         item
           Caption = 'Game Engine'
-          Width = 150
+          Width = 200
         end
         item
           AutoSize = True
           Caption = 'Location'
         end>
-      ReadOnly = True
+      ColumnClick = False
+      GridLines = True
       RowSelect = True
       TabOrder = 0
       ViewStyle = vsReport
+      OnEdited = lvGameEnginesEdited
       OnSelectItem = lvGameEnginesSelectItem
       ExplicitWidth = 527
     end
@@ -78,7 +82,7 @@ object frmDLMainForm: TfrmDLMainForm
       Left = 537
       Top = 0
       Width = 91
-      Height = 155
+      Height = 160
       Align = alRight
       BevelOuter = bvNone
       TabOrder = 1
@@ -161,6 +165,48 @@ object frmDLMainForm: TfrmDLMainForm
         TabOrder = 2
         OnClick = btnDeleteClick
       end
+      object btnUp: TBitBtn
+        AlignWithMargins = True
+        Left = 3
+        Top = 96
+        Width = 85
+        Height = 25
+        Align = alTop
+        Caption = '&Up'
+        Glyph.Data = {
+          F6000000424DF600000000000000760000002800000010000000100000000100
+          04000000000080000000120B0000120B00001000000010000000000000000000
+          800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+          FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333000333
+          33333333330C033333333333330C033333333333330C033333333333330C0333
+          33333333330C033333333330000C000033333330CCCCCCC0333333330CCCCC03
+          333333330CCCCC033333333330CCC0333333333330CCC03333333333330C0333
+          33333333330C0333333333333330333333333333333033333333}
+        ParentDoubleBuffered = True
+        TabOrder = 3
+        OnClick = btnUpClick
+      end
+      object btnDown: TBitBtn
+        AlignWithMargins = True
+        Left = 3
+        Top = 127
+        Width = 85
+        Height = 25
+        Align = alTop
+        Caption = 'D&own'
+        Glyph.Data = {
+          F6000000424DF600000000000000760000002800000010000000100000000100
+          04000000000080000000120B0000120B00001000000010000000000000000000
+          800000800000008080008000000080008000808000007F7F7F00BFBFBF000000
+          FF0000FF000000FFFF00FF000000FF00FF00FFFF0000FFFFFF00333333303333
+          333333333330333333333333330C033333333333330C03333333333330CCC033
+          3333333330CCC033333333330CCCCC03333333330CCCCC0333333330CCCCCCC0
+          33333330000C000033333333330C033333333333330C033333333333330C0333
+          33333333330C033333333333330C033333333333330003333333}
+        ParentDoubleBuffered = True
+        TabOrder = 4
+        OnClick = btnDownClick
+      end
     end
   end
   object pnlOptions: TPanel
@@ -186,7 +232,7 @@ object frmDLMainForm: TfrmDLMainForm
       FocusControl = cbxExtraParams
     end
     object btnLaunch: TBitBtn
-      Left = 536
+      Left = 532
       Top = 6
       Width = 85
       Height = 25
@@ -196,27 +242,28 @@ object frmDLMainForm: TfrmDLMainForm
       ParentDoubleBuffered = True
       TabOrder = 1
       OnClick = btnLaunchClick
-      ExplicitLeft = 532
+      ExplicitLeft = 528
     end
     object cbxExtraParams: TComboBox
       Left = 64
       Top = 6
-      Width = 466
+      Width = 462
       Height = 24
       Anchors = [akLeft, akTop, akRight]
       TabOrder = 0
+      ExplicitWidth = 458
     end
   end
   object pnlWADs: TPanel
     Left = 0
-    Top = 188
+    Top = 193
     Width = 628
-    Height = 213
+    Height = 208
     Align = alClient
     BevelOuter = bvNone
     TabOrder = 1
     ExplicitWidth = 624
-    ExplicitHeight = 212
+    ExplicitHeight = 207
     object pnlWADFolder: TPanel
       Left = 0
       Top = 0
@@ -241,16 +288,16 @@ object frmDLMainForm: TfrmDLMainForm
       object edtWADFolder: TEdit
         Left = 96
         Top = 6
-        Width = 434
+        Width = 430
         Height = 24
         Anchors = [akLeft, akTop, akRight]
         ReadOnly = True
         TabOrder = 0
         OnChange = edtWADFolderChange
-        ExplicitWidth = 430
+        ExplicitWidth = 426
       end
       object btnBrowse: TBitBtn
-        Left = 536
+        Left = 532
         Top = 6
         Width = 85
         Height = 25
@@ -259,22 +306,27 @@ object frmDLMainForm: TfrmDLMainForm
         ParentDoubleBuffered = True
         TabOrder = 1
         OnClick = btnBrowseClick
-        ExplicitLeft = 532
+        ExplicitLeft = 528
       end
     end
     object gpnlBottomLayout: TGridPanel
       Left = 0
       Top = 40
       Width = 628
-      Height = 173
+      Height = 168
       Align = alClient
       BevelOuter = bvNone
       ColumnCollection = <
         item
-          Value = 50.000000000000000000
+          SizeStyle = ssAbsolute
+          Value = 175.000000000000000000
         end
         item
-          Value = 50.000000000000000000
+          SizeStyle = ssAbsolute
+          Value = 175.000000000000000000
+        end
+        item
+          Value = 100.000000000000000000
         end>
       ControlCollection = <
         item
@@ -286,6 +338,11 @@ object frmDLMainForm: TfrmDLMainForm
           Column = 1
           Control = pnlPWADs
           Row = 0
+        end
+        item
+          Column = 2
+          Control = pnlText
+          Row = 0
         end>
       RowCollection = <
         item
@@ -293,23 +350,22 @@ object frmDLMainForm: TfrmDLMainForm
         end>
       TabOrder = 1
       ExplicitWidth = 624
-      ExplicitHeight = 172
+      ExplicitHeight = 167
       object pnlIWADs: TPanel
         Left = 0
         Top = 0
-        Width = 314
-        Height = 173
+        Width = 175
+        Height = 168
         Align = alClient
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 0
-        ExplicitWidth = 312
-        ExplicitHeight = 172
+        ExplicitHeight = 167
         object lblIWADs: TLabel
           AlignWithMargins = True
           Left = 3
           Top = 3
-          Width = 308
+          Width = 169
           Height = 16
           Align = alTop
           Anchors = []
@@ -321,8 +377,8 @@ object frmDLMainForm: TfrmDLMainForm
           AlignWithMargins = True
           Left = 3
           Top = 25
-          Width = 308
-          Height = 145
+          Width = 169
+          Height = 140
           Align = alClient
           Anchors = []
           HideSelection = False
@@ -331,27 +387,24 @@ object frmDLMainForm: TfrmDLMainForm
           RowSelect = True
           TabOrder = 0
           OnClick = tvIWADsClick
-          ExplicitWidth = 306
-          ExplicitHeight = 144
+          ExplicitHeight = 139
         end
       end
       object pnlPWADs: TPanel
-        Left = 314
+        Left = 175
         Top = 0
-        Width = 314
-        Height = 173
+        Width = 175
+        Height = 168
         Align = alClient
         Anchors = []
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitLeft = 312
-        ExplicitWidth = 312
-        ExplicitHeight = 172
+        ExplicitHeight = 167
         object lblPWADs: TLabel
           AlignWithMargins = True
           Left = 3
           Top = 3
-          Width = 308
+          Width = 169
           Height = 16
           Align = alTop
           Anchors = []
@@ -363,8 +416,8 @@ object frmDLMainForm: TfrmDLMainForm
           AlignWithMargins = True
           Left = 3
           Top = 25
-          Width = 308
-          Height = 145
+          Width = 169
+          Height = 140
           Align = alClient
           Anchors = []
           HideSelection = False
@@ -373,8 +426,49 @@ object frmDLMainForm: TfrmDLMainForm
           RowSelect = True
           TabOrder = 0
           OnClick = tvPWADsClick
-          ExplicitWidth = 306
-          ExplicitHeight = 144
+          ExplicitHeight = 139
+        end
+      end
+      object pnlText: TPanel
+        Left = 350
+        Top = 0
+        Width = 278
+        Height = 168
+        Align = alClient
+        Anchors = []
+        BevelOuter = bvNone
+        TabOrder = 2
+        ExplicitWidth = 274
+        ExplicitHeight = 167
+        object lblWADText: TLabel
+          AlignWithMargins = True
+          Left = 3
+          Top = 3
+          Width = 272
+          Height = 16
+          Align = alTop
+          Caption = 'WAD File &Text (if available)'
+          ExplicitWidth = 156
+        end
+        object mmoWADText: TMemo
+          AlignWithMargins = True
+          Left = 3
+          Top = 25
+          Width = 272
+          Height = 140
+          Align = alClient
+          Font.Charset = DEFAULT_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -15
+          Font.Name = 'Consolas'
+          Font.Style = []
+          ParentFont = False
+          ReadOnly = True
+          ScrollBars = ssBoth
+          TabOrder = 0
+          WordWrap = False
+          ExplicitWidth = 268
+          ExplicitHeight = 139
         end
       end
     end
@@ -383,7 +477,16 @@ object frmDLMainForm: TfrmDLMainForm
     DefaultExt = '.exe'
     Filter = 'Game Engines (*.exe)|*.exe'
     Title = 'Game Engine'
-    Left = 392
-    Top = 64
+    Left = 48
+    Top = 72
+  end
+  object dlgTask: TTaskDialog
+    Buttons = <>
+    CommonButtons = [tcbOk]
+    Flags = [tfEnableHyperlinks, tfAllowDialogCancellation, tfPositionRelativeToWindow]
+    RadioButtons = <>
+    OnHyperlinkClicked = dlgTaskHyperlinkClicked
+    Left = 144
+    Top = 72
   end
 end
