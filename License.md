@@ -2,9 +2,9 @@
 
 Author:   David Hoyle (davidghoyle@gmail.com / https://github.com/DGH2112)
 
-Version:  1.0
+Version:  1.1
 
-Date:     23 May 2023
+Date:     10 Jun 2023
 
 Web Site: http://https://github.com/DGH2112/Doom-Loader
 
