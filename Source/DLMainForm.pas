@@ -3,8 +3,8 @@
   This module contains a form for configuring and launching Doom and its various WADs.
 
   @Author  David Hoyle
-  @Version 13.886
-  @Date    03 Jun 2023
+  @Version 14.234
+  @Date    04 Jun 2023
 
   @license
 
@@ -93,6 +93,7 @@ Type
     procedure edtWADFolderChange(Sender: TObject);
     Procedure FormDestroy(Sender: TObject);
     Procedure FormCreate(Sender: TObject);
+    procedure FormShow(Sender: TObject);
     procedure lvGameEnginesEdited(Sender: TObject; Item: TListItem; var S: string);
     procedure tvIWADsClick(Sender: TObject);
     procedure tvPWADsClick(Sender: TObject);
@@ -107,8 +108,10 @@ Type
     FSelectedPWAD       : String;
     FIWADExceptions     : TStringList;
     FAssociatedIWAD     : TStringList;
+    FAssociatedPWAD     : TStringList;
     FAssociatedOptions  : TStringList;
     FDLOptions          : TDLOptionsRecord;
+    procedure SaveSelections;
   Strict Protected
     Procedure LoadSettings;
     Procedure SaveSettings;
@@ -149,6 +152,7 @@ uses
   System.TypInfo,
   Winapi.ShellAPI,
   Vcl.FileCtrl,
+  Vcl.Themes,
   DLOptionsForm;
 
 Const
@@ -184,6 +188,8 @@ Const
   strIWADExceptions = 'IWAD Exceptions';
   (** A constant to define the INI section for the list of IWAD associated with a PWAD. **)
   strAsscoiatedIWADs = 'Associated IWADs';
+  (** A constant to define the INI section for the list of PWAD associated with a Game Engine. **)
+  strAsscoiatedPWADs = 'Associated PWADs';
   (** A constant to define the INI section for the list of Extra Options. **)
   strExtraOptionsINISection = 'Extra Options';
   (** A constant to define the INI section for the list of Associated Options. **)
@@ -198,6 +204,8 @@ Const
   iAboutMenuID = 209;
   (** A constant to define the INI Key for the extra command line parameters association. **)
   strExtraOpsAssocINIKey = 'Extra Options Association';
+  (** A constant for the VCL Themes INI Key. **)
+  strVCLStyleINIKey = 'VCLStyle';
 
 {$R *.dfm}
 
@@ -415,11 +423,7 @@ Begin
     Exit;
   If dloPauseMedia In FDLOptions.FOptions Then
     PlayPauseMedia();
-  // Save Associated IWAD
-  If Assigned(tvPWADs.Selected) Then
-    FAssociatedIWAD.Values[TreePath(tvPWADs.Selected)] := FSelectedIWAD;
-  // Save Extra Options to the dropdown list
-  SaveExtraOptions();
+  SaveSelections();
   // Launch the game engine with IWAD and optional PWAD
   strParams := Format('"%s"', [FGameEngines.ValueFromIndex[lvGameEngines.ItemIndex]]);
   If CompareText(FSelectedIWAD, strNone) <> 0 Then
@@ -524,7 +528,8 @@ End;
 Procedure TfrmDLMainForm.DisplayOptions;
 
 Begin
-  TfrmDLOptions.Execute(FDLOptions);
+  If TfrmDLOptions.Execute(FDLOptions) Then
+    AddSystemMenus;
 End;
 
 (**
@@ -625,12 +630,11 @@ Begin
   FIWADExceptions.Duplicates := dupIgnore;
   FIWADExceptions.Add(strHEXDDWAD);
   FAssociatedIWAD := TStringList.Create;
+  FAssociatedPWAD := TStringList.Create;
   FAssociatedOptions := TStringList.Create;
   LoadVersionInfo;
   LoadSettings;
   PopulateGameEngines;
-  PopulateWADs;
-  UpdateLaunchBtn;
   LoadWADText(edtWADFolder.Text + '\' + FSelectedPWAD);
   AddSystemMenus();
 End;
@@ -650,11 +654,28 @@ Procedure TfrmDLMainForm.FormDestroy(Sender: TObject);
 Begin
   SaveSettings;
   FAssociatedOptions.Free;
+  FAssociatedPWAD.Free;
   FAssociatedIWAD.Free;
   FIWADExceptions.Free;
   FGameEngineNames.Free;
   FGameEngines.Free;
   FINIFile.Free;
+End;
+
+(**
+
+  This is an on show event handler for the main form.
+
+  @precon  None.
+  @postcon Updates the launch button status when the form appears.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLMainForm.FormShow(Sender: TObject);
+
+Begin
+  UpdateLaunchBtn;
 End;
 
 (**
@@ -739,6 +760,9 @@ Begin
     FINIFile.ReadSection(strAsscoiatedIWADs, sl);
     For strItem In sl Do
       FAssociatedIWAD.AddPair(strItem, FINIFile.ReadString(strAsscoiatedIWADs, strItem, ''));
+    FINIFile.ReadSection(strAsscoiatedPWADs, sl);
+    For strItem In sl Do
+      FAssociatedPWAD.AddPair(strItem, FINIFile.ReadString(strAsscoiatedPWADs, strItem, ''));
     FINIFile.ReadSection(strExtraOptionsINISection, sl);
     For strItem In sl Do
       cbxExtraParams.Items.Add(FINIFile.ReadString(strExtraOptionsINISection, strItem, ''));
@@ -749,9 +773,9 @@ Begin
     sl.Free;
   End;
   FSelectedGameEngine := FINIFile.ReadString(strSetupINISection, strSelectGameEngineINIKey, '');
-  edtWADFolder.Text := FINIFile.ReadString(strSetupINISection, strWADFolderINIKey, '');
   FSelectedIWAD := FINIFile.ReadString(strSetupINISection, strSelectedIWADINIKey, '');
   FSelectedPWAD := FINIFile.ReadString(strSetupINISection, strSelectedPWADINIKey, '');
+  edtWADFolder.Text := FINIFile.ReadString(strSetupINISection, strWADFolderINIKey, '');
   cbxExtraParams.Text := FINIFile.ReadString(strSetupINISection, strExtraParamsINIKey, '');
   lvGameEngines.Columns[0].Width := FINIFile.ReadInteger(strSetupINISection, strGameEngineNameWidthINIKey,
     lvGameEngines.Columns[0].Width);
@@ -760,6 +784,7 @@ Begin
       Include(FDLOptions.FOptions, eOption);
   FDLOptions.FExtraOps := TDLExtraOpsAssociation(FINIFile.ReadInteger(strSetupINISection,
     strExtraOpsAssocINIKey, Integer(doaGameEngine)));
+  TStyleManager.TrySetStyle(FINIFile.ReadString(strSetupINISection, strVCLStyleINIKey, StyleServices.Name));
 End;
 
 (**
@@ -912,8 +937,17 @@ End;
 **)
 Procedure TfrmDLMainForm.lvGameEnginesSelectItem(Sender: TObject; Item: TListItem; Selected: Boolean);
 
+Var
+  Node: TTreeNode;
+
 Begin
   FSelectedGameEngine := FGameEngines.Names[Item.Index];
+  Node := Find(tvPWADs, Nil, FAssociatedPWAD.Values[Item.Caption]);
+  If Assigned(Node) Then
+    Begin
+      Node.Selected := True;
+      tvPWADsClick(Sender);
+    End;
   If FDLOptions.FExtraOps = doaGameEngine Then
     cbxExtraParams.Text := FAssociatedOptions.Values[Item.Caption];
   UpdateUpAndDownBtns;
@@ -1079,6 +1113,26 @@ End;
 
 (**
 
+  This method saves the various selection on Launching the Game Engine.
+
+  @precon  None.
+  @postcon The various selections are saved.
+
+**)
+Procedure TfrmDLMainForm.SaveSelections;
+
+Begin
+  // Save Associated IWAD associated with the PWAD
+  If Assigned(tvPWADs.Selected) Then
+    FAssociatedIWAD.Values[TreePath(tvPWADs.Selected)] := FSelectedIWAD;
+  // Save the associated PWAD with the selected Game Engine
+  FAssociatedPWAD.Values[lvGameEngines.Selected.Caption] := FSelectedPWAD;
+  // Save Extra Options to the dropdown list
+  SaveExtraOptions();
+End;
+
+(**
+
   This method saves the applications settings.
 
   @precon  None.
@@ -1117,6 +1171,9 @@ Begin
   FINIFile.EraseSection(strAsscoiatedIWADs);
   For i := 0 To FAssociatedIWAD.Count - 1 Do
     FINIFile.WriteString(strAsscoiatedIWADs, FAssociatedIWAD.Names[i], FAssociatedIWAD.ValueFromIndex[i]);
+  FINIFile.EraseSection(strAsscoiatedPWADs);
+  For i := 0 To FAssociatedPWAD.Count - 1 Do
+    FINIFile.WriteString(strAsscoiatedPWADs, FAssociatedPWAD.Names[i], FAssociatedPWAD.ValueFromIndex[i]);
   FINIFile.EraseSection(strExtraOptionsINISection);
   For i := 0 To cbxExtraParams.Items.Count - 1 Do
     FINIFile.WriteString(strExtraOptionsINISection, Format(strItem, [i]), cbxExtraParams.Items[i]);
@@ -1129,6 +1186,7 @@ Begin
     FINIFile.WriteBool(strSetupINISection, GetEnumName(TypeInfo(TDLOption), Ord(eOption)),
       eOption In FDLOptions.FOptions);
   FINIFile.WriteInteger(strSetupINISection, strExtraOpsAssocINIKey, Integer(FDLOptions.FExtraOps));
+  FINIFile.WriteString(strSetupINISection, strVCLStyleINIKey, StyleServices.Name);
   If FINIFile.Modified Then
     FINIFile.UpdateFile;
 End;
@@ -1176,7 +1234,7 @@ Procedure TfrmDLMainForm.tvIWADsClick(Sender: TObject);
 Begin
   FSelectedIWAD := TreePath(tvIWADs.Selected);
   // Update Extra Options
-  If FDLOptions.FExtraOps = doaGameEngine Then
+  If FDLOptions.FExtraOps = doaIWAD Then
     cbxExtraParams.Text := FAssociatedOptions.Values[FSelectedIWAD];
   // Update Launch button
   UpdateLaunchBtn;
@@ -1205,7 +1263,7 @@ Var
 Begin
   FSelectedPWAD := TreePath(tvPWADs.Selected);
   // Update Extra Options
-  If FDLOptions.FExtraOps = doaGameEngine Then
+  If FDLOptions.FExtraOps = doaPWAD Then
     cbxExtraParams.Text := FAssociatedOptions.Values[FSelectedPWAD];
   // Update associated IWAD
   strIWAD := FAssociatedIWAD.Values[FSelectedPWAD];

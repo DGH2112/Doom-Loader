@@ -3,8 +3,8 @@
   This module contains a class to represent a form for displaying the applications options.
 
   @Author  David Hoyle
-  @Version 1.273
-  @Date    03 Jun 2023
+  @Version 1.436
+  @Date    04 Jun 2023
   
   @license
 
@@ -56,20 +56,41 @@ Type
     btnOK: TBitBtn;
     btnCancel: TBitBtn;
     rgpExtraOptions: TRadioGroup;
+    lblVCLTheme: TLabel;
+    cbxVCLThemes: TComboBox;
+    procedure cbxVCLThemesChange(Sender: TObject);
   Strict Private
+    FLastStyleName : String;
   Strict Protected
     Procedure InitialiseForm(Const Options : TDLOptionsRecord);
-    Procedure FinaliseForm(Var Options : TDLOptionsRecord);
+    Function  FinaliseForm(Var Options : TDLOptionsRecord) : Boolean;
   Public
     Class Function Execute(Var Options : TDLOptionsRecord) : Boolean;
   End;
 
 Implementation
 
-Uses
+uses
+  Vcl.Themes,
   DLConstants;
 
 {$R *.dfm}
+
+(**
+
+  This is an on change event handler for the VCL Themes control.
+
+  @precon  None.
+  @postcon The theme of the application changes based on the selection.
+
+  @param   Sender as a TObject
+
+**)
+Procedure TfrmDLOptions.cbxVCLThemesChange(Sender: TObject);
+
+Begin
+  TStyleManager.TrySetStyle(cbxVCLThemes.Text);
+End;
 
 (**
 
@@ -93,10 +114,7 @@ Begin
   Try
     F.InitialiseForm(Options);
     If F.ShowModal = mrOK Then
-      Begin
-        F.FinaliseForm(Options);
-        Result := True;
-      End;
+      Result := F.FinaliseForm(Options);
   Finally
     F.Free;
   End;
@@ -110,9 +128,10 @@ End;
   @postcon The passed options record is updated.
 
   @param   Options as a TDLOptionsRecord as a reference
+  @return  a Boolean
 
 **)
-Procedure TfrmDLOptions.FinaliseForm(Var Options: TDLOptionsRecord);
+Function TfrmDLOptions.FinaliseForm(Var Options: TDLOptionsRecord) : Boolean;
 
 Var
   iOption : Integer;
@@ -123,6 +142,7 @@ Begin
     If lbxOptions.Checked[iOption] Then
       Include(Options.FOptions, TDLOption(iOption));
   Options.FExtraOps := TDLExtraOpsAssociation(rgpExtraOptions.ItemIndex);
+  Result := CompareText(FLastStyleName, StyleServices.Name) <> 0;
 End;
 
 (**
@@ -141,8 +161,10 @@ Var
   eOption : TDLOption;
   iIndex: Integer;
   eExtraOp : TDLExtraOpsAssociation;
+  strStyle: String;
 
 Begin
+  FLastStyleName := StyleServices.Name;
   For eOption := Low(TDLOption) To High(TDLOption) Do
     Begin
       iIndex := lbxOptions.Items.Add(astrOptionDescription[eOption]);
@@ -151,6 +173,9 @@ Begin
   For eExtraOp := Low(TDLExtraOpsAssociation) To High(TDLExtraOpsAssociation) Do
     rgpExtraOptions.Items.Add(astrExtraOpsDescriptions[eExtraOp]);
   rgpExtraOptions.ItemIndex := Integer(Options.FExtraOps);
+  For strStyle In TStyleManager.StyleNames Do
+    cbxVCLThemes.Items.Add(strStyle);
+  cbxVCLThemes.ItemIndex := cbxVCLThemes.Items.IndexOf(StyleServices.Name);
 End;
 
 End.
